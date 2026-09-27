@@ -344,7 +344,7 @@ async function publish() {
 }
 
 function showLogin() { dom.boot.hidden = true; dom.studio.hidden = true; dom.login.hidden = false; }
-function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = '1.3.1'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
+function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = '1.3.2'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
 async function loadPublicData() {
   const [site, projects] = await Promise.all([fetch('../content/site.json',{cache:'no-store'}).then(r=>r.json()), fetch('../content/projects.json',{cache:'no-store'}).then(r=>r.json())]);
   apiBase = site.admin?.apiBase || ''; return { site, projects: projects.projects };

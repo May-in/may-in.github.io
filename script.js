@@ -299,19 +299,13 @@ function renderCustomBlocks(site) {
 
 let telemetryStarted = false;
 function studioApi(site, path) { return `${String(site.admin?.apiBase || '').replace(/\/$/, '')}${path}`; }
-function anonymousSessionId() {
-  const key = 'mayin-anonymous-visit'; const now = Date.now(); const timeout = 2 * 60 * 60_000;
-  const newId = () => `v-${crypto.randomUUID ? crypto.randomUUID() : `${now.toString(36)}${Math.random().toString(36).slice(2)}`}`;
-  try {
-    const saved = JSON.parse(localStorage.getItem(key) || 'null');
-    const id = saved?.id && now - Number(saved.lastSeen || 0) < timeout ? saved.id : newId();
-    localStorage.setItem(key, JSON.stringify({ id, lastSeen: now })); return id;
-  } catch { return newId(); }
-}
 function startAnonymousAnalytics(site) {
   if (isAdminPreview || telemetryStarted || !site.admin?.analyticsEnabled || !site.admin?.apiBase) return;
   telemetryStarted = true;
-  const payload = JSON.stringify({ path: `${location.pathname}${location.search}`, referer: document.referrer || 'Direct', sessionId: anonymousSessionId() });
+  // The Worker already groups visits by an ephemeral, secret-salted IP hash.
+  // A persistent browser identifier adds no value and is removed for returning visitors.
+  try { localStorage.removeItem('mayin-anonymous-visit'); } catch {}
+  const payload = JSON.stringify({ path: `${location.pathname}${location.search}`, referer: document.referrer || 'Direct' });
   const endpoint = studioApi(site, '/public/visit');
   if (navigator.sendBeacon) navigator.sendBeacon(endpoint, new Blob([payload], { type: 'text/plain' }));
   else fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: payload, keepalive: true }).catch(() => {});

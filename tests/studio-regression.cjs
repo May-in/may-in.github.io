@@ -68,7 +68,7 @@ const server = http.createServer(async (request, response) => {
 
     const wordmark = frame.locator('.wordmark [data-edit-path="site.name"]');
     await wordmark.click();
-    assert.equal(await page.locator('#inspector [data-path="site.name"]').count(), 1, 'Navigation text was not selectable');
+    await page.locator('#inspector [data-path="site.name"]').waitFor();
     await page.locator('#inspector [data-path="site.name"]').fill('May’in TEST');
     await page.waitForTimeout(100);
     assert.equal(await wordmark.textContent(), 'May’in TEST', 'Site name was not previewed live');
@@ -95,6 +95,19 @@ const server = http.createServer(async (request, response) => {
     const coverAfter = await cover.evaluate((element) => getComputedStyle(element).borderTopLeftRadius);
     assert.notEqual(coverAfter, coverBefore, 'Cover corners were not previewed live');
     assert.ok(!errors.length, `Browser errors: ${errors.join('; ')}`);
-    console.log('Studio regression OK: caret, typing stability, live text style, undo, navigation and project editors, live media and cover corners.');
+    const publicPage = await browser.newPage();
+    const visits = [];
+    await publicPage.route('https://mayin-admin.maycelia29.workers.dev/public/visit', (route) => {
+      visits.push(route.request().postDataJSON());
+      return route.fulfill({ status:200, contentType:'application/json', body:'{}' });
+    });
+    await publicPage.goto(`http://localhost:${server.address().port}/`);
+    await publicPage.evaluate(() => localStorage.setItem('mayin-anonymous-visit', JSON.stringify({ id:'old-browser-id', lastSeen:Date.now() })));
+    const nextVisit = publicPage.waitForRequest((request) => request.url().endsWith('/public/visit'));
+    await publicPage.reload();
+    await nextVisit;
+    assert.equal(await publicPage.evaluate(() => localStorage.getItem('mayin-anonymous-visit')), null, 'Obsolete visitor ID remained in browser storage');
+    assert.ok(visits.length >= 2 && !('sessionId' in visits.at(-1)), 'Analytics still transmitted a browser visitor ID');
+    console.log('Regression OK: Studio editing, live preview and undo; anonymous analytics without browser identifier.');
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; server.close(); });

@@ -39,7 +39,7 @@ async function beginLogin(request, env) {
   const url = new URL(request.url);
   const state = randomToken(24);
   const requestedReturn = url.searchParams.get('returnTo') || `${env.SITE_ORIGIN}/admin/`;
-  const returnTo = requestedReturn.startsWith(`${env.SITE_ORIGIN}/admin`) ? requestedReturn : `${env.SITE_ORIGIN}/admin/`;
+  const returnTo = safeAdminReturn(requestedReturn, env) || `${env.SITE_ORIGIN}/admin/`;
   const statePayload = await seal({ state, returnTo, exp: Date.now() + 10 * 60_000 }, env.COOKIE_SECRET);
   const redirect = new URL('https://github.com/login/oauth/authorize');
   redirect.searchParams.set('client_id', env.GITHUB_CLIENT_ID);
@@ -52,18 +52,18 @@ async function finishLogin(request, env) {
   assertConfig(env);
   const url = new URL(request.url);
   const saved = await unseal(readCookie(request, 'mayin_oauth'), env.COOKIE_SECRET);
-  if (!saved || saved.exp < Date.now() || saved.state !== url.searchParams.get('state')) return responseJson({ error: 'La connexion GitHub a expiré.' }, 400, request, env);
+  if (!saved || saved.exp < Date.now() || saved.state !== url.searchParams.get('state')) return responseJson({ error: 'La connexion a expiré.' }, 400, request, env);
   const code = url.searchParams.get('code');
-  if (!code) return responseJson({ error: 'Autorisation GitHub manquante.' }, 400, request, env);
+  if (!code) return responseJson({ error: 'Autorisation manquante.' }, 400, request, env);
   const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Mayin-Studio' },
     body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: `${url.origin}/auth/callback` })
   });
   const tokenData = await tokenResponse.json();
-  if (!tokenResponse.ok || !tokenData.access_token) return responseJson({ error: 'GitHub a refusé la connexion.' }, 401, request, env);
+  if (!tokenResponse.ok || !tokenData.access_token) return responseJson({ error: 'La connexion a été refusée.' }, 401, request, env);
   const userResponse = await github('/user', tokenData.access_token);
   const user = await userResponse.json();
-  if (!userResponse.ok || String(user.login).toLowerCase() !== String(env.ALLOWED_GITHUB_LOGIN).toLowerCase()) return responseJson({ error: 'Ce compte GitHub n’est pas autorisé.' }, 403, request, env);
+  if (!userResponse.ok || String(user.login).toLowerCase() !== String(env.ALLOWED_GITHUB_LOGIN).toLowerCase()) return responseJson({ error: 'Ce compte n’est pas autorisé.' }, 403, request, env);
   const session = await seal({ token: tokenData.access_token, login: user.login, avatar: user.avatar_url, csrf: randomToken(18), exp: Date.now() + 7.5 * 60 * 60_000 }, env.COOKIE_SECRET);
   const target = new URL(saved.returnTo);
   target.hash = `session=${encodeURIComponent(session)}`;
@@ -80,7 +80,14 @@ async function requireSession(request, env) {
 
 function publicRequestAllowed(request, env) {
   const origin = request.headers.get('Origin');
-  return !origin || origin === env.SITE_ORIGIN;
+  return !origin || allowedSiteOrigins(env).includes(origin);
+}
+function allowedSiteOrigins(env) { return [env.SITE_ORIGIN, env.LEGACY_SITE_ORIGIN].filter(Boolean); }
+function safeAdminReturn(value, env) {
+  try {
+    const target = new URL(value);
+    return allowedSiteOrigins(env).includes(target.origin) && (target.pathname === '/admin' || target.pathname.startsWith('/admin/')) ? target.toString() : '';
+  } catch { return ''; }
 }
 function monthKey(date = new Date()) { return date.toISOString().slice(0, 7); }
 function topEntries(entries, limit = 6) { return Object.entries(entries || {}).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([label, value]) => ({ label, value })); }
@@ -207,12 +214,12 @@ function responseJson(value, status, request, env) {
 }
 function corsPreflight(request, env) {
   const origin = request.headers.get('Origin');
-  if (origin !== env.SITE_ORIGIN) return new Response(null, { status: 403, headers: securityHeaders() });
+  if (!allowedSiteOrigins(env).includes(origin)) return new Response(null, { status: 403, headers: securityHeaders() });
   return new Response(null, { status: 204, headers: { ...corsHeaders(request, env), 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Authorization,Content-Type,X-Mayin-CSRF', 'Access-Control-Max-Age': '86400', ...securityHeaders() } });
 }
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin');
-  return origin === env.SITE_ORIGIN ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
+  return allowedSiteOrigins(env).includes(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
 }
 function securityHeaders() { return { 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY' }; }
 function cookie(name, value, maxAge, sameSite) { return `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=${sameSite}`; }

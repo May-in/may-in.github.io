@@ -128,7 +128,7 @@ function applySiteFields(site) {
 
 function applyStructuredData(site) {
   if (page !== 'home') return;
-  const base = (site.domain || 'https://may-in.github.io').replace(/\/$/, '');
+  const base = (site.domain || 'https://may-in.be').replace(/\/$/, '');
   const creator = site.creatorName || 'Célia May';
   const structured = {
     '@context': 'https://schema.org',

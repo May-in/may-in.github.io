@@ -12,10 +12,11 @@
           "src": "assets/projects/01-kot-etudiant/11-inspirations-alpha.webp",
           "kind": "cutout",
           "alt": "Références de végétation, de lumière, de lecture et de vie nomade.",
-          "caption": "Un fil conducteur inspiré de la vie des cultures nomades s'appliquant à un étudiant Erasmus qui étudie, s'amuse et s'émerveille de chaque aspect de la vie ",
+          "caption": "Un fil conducteur inspiré de la vie des cultures nomades s'appliquant à un étudiant Erasmus. L'univers de la roulotte et des cultures étrangères sera donc essentiel dans ce projet. \nLa vie étudiante, quant à elle, sera abordée de manière plus fonctionnelle dans les usages du quotidien.",
           "format": "portrait",
           "align": "center",
-          "width": 60
+          "width": 60,
+          "offsetX": -350
         },
         {
           "src": "assets/projects/01-kot-etudiant/08-maquette-detail-alpha.webp",
@@ -23,7 +24,9 @@
           "alt": "Vue depuis l’entrée vers le coin repas et la cuisine.",
           "caption": "Vue de l'entrée, inspirée de la forme d'une roulotte. Une séparation fonctionnelle toute en douceur entre l'extérieur et une bulle permettant la relaxation, l'étude et l'amusement. ",
           "format": "portrait",
-          "align": "left"
+          "align": "left",
+          "offsetX": 0,
+          "offsetY": 15
         },
         {
           "src": "assets/projects/01-kot-etudiant/09-maquette-piece-alpha.webp",
@@ -32,7 +35,9 @@
           "caption": "coin détente et convivial avec des tapis, des coussins ainsi que des poufs réalisés par des artisans au crochet. Une mise en avant de l'artisanat des cultures nomades et un moyen de passer du temps entre amis.",
           "format": "portrait",
           "align": "right",
-          "radius": "soft"
+          "radius": "soft",
+          "offsetX": -40,
+          "offsetY": 40
         },
         {
           "src": "assets/projects/01-kot-etudiant/12-matieres-alpha.webp",
@@ -40,12 +45,15 @@
           "alt": "Textiles, bois foncé, vert sauge et terre cuite retenus pour le kot.",
           "caption": "une palette de matériaux inspirée de la nature et de l'artisanat dans une démarche de récupération et de réappropriation des éléments.",
           "format": "portrait",
-          "align": "center"
+          "align": "center",
+          "offsetX": 300
         }
       ],
       "coverKind": "cutout",
       "width": 100,
-      "offsetY": 75
+      "offsetY": -25,
+      "blocks": [],
+      "heroBlocks": []
     },
     {
       "slug": "moooi-stand-commercial",
@@ -60,28 +68,33 @@
           "kind": "cutout",
           "alt": "Vue latérale du stand Moooi",
           "caption": "Du damier, aux végétaux, en passant par les cascades d'eau, le papier peint, les miroirs ou la moquette moelleuse comme les nuages. Chaque détail est choisi pour mettre en avant les mobiliers ainsi que pour offrir une expérience sensible unique à chaque visiteur.",
-          "format": "landscape"
+          "format": "landscape",
+          "offsetX": 25
         },
         {
           "src": "assets/projects/02-stand-moooi/08-fauteuil-cutout.png",
           "kind": "cutout",
           "alt": "Fauteuil rouge de la maquette Moooi",
-          "caption": "Rien n'est mieux que de pouvoir manipuler des prototypes des mobiliers à échelle 1/20. Le fauteuil Hortensia : la star de Moooi",
-          "format": "landscape"
+          "caption": "Rien n'est mieux que de pouvoir manipuler des prototypes des mobiliers à échelle 1/20. Le fauteuil Hortensia : la star de Moooi. Empli de nature et de magie, ces mobiliers m'ont inspiré mon fil conducteur : un voyage dans l'extraordinaire. ",
+          "format": "landscape",
+          "offsetY": -145
         },
         {
           "src": "assets/projects/02-stand-moooi/11-maquette-front-alpha.webp",
           "kind": "cutout",
           "alt": "Maquette : l’escalier relie l’espace d’exposition à la mezzanine.",
           "caption": "Les murs ainsi que les éléments de structure ont été étudiés dans l'optique d'un montage et démontage facile et rapide. Les cloisons réalisés avec des plantes sont dans des pots mobiles permettant des sorties de sécurité ou pour une meilleure fluidité. ",
-          "format": "portrait"
+          "format": "portrait",
+          "offsetX": 25
         },
         {
           "src": "assets/projects/02-stand-moooi/12-maquette-dessus-alpha.webp",
           "kind": "cutout",
           "alt": "Vue de dessus : organisation des deux niveaux du stand.",
           "caption": "les 3 \"O\" formant l'identité de la maque Moooi sont ludiquement inscrits dans l'architecture à travers un portail d'entrée, un hublot et un tapis rond. ",
-          "format": "original"
+          "format": "original",
+          "offsetY": -50,
+          "offsetX": 40
         },
         {
           "src": "assets/projects/02-stand-moooi/13-maquette-detail-alpha.webp",
@@ -91,7 +104,9 @@
           "format": "portrait"
         }
       ],
-      "coverKind": "cutout"
+      "coverKind": "cutout",
+      "blocks": [],
+      "heroBlocks": []
     },
     {
       "slug": "amenagement-patisserie",
@@ -141,7 +156,7 @@
           "src": "assets/projects/03-patisserie/06-vue-2.webp",
           "kind": "wide",
           "alt": "Salle de dégustation baignée de lumière devant les fenêtres cintrées.",
-          "caption": "la partie atelier est totalement ajustable pour accueillir chaque groupe. "
+          "caption": "la partie atelier est totalement ajustable pour accueillir chaque groupe. Chaque table est dotée de son petit chariot. à l'image des premiers pâtissiers récolant leurs ingrédients sur les marchés locaux, le client prend son chariot afin de récolter le nécessaire pour sa création."
         },
         {
           "src": "assets/projects/03-patisserie/07-vue-3.webp",
@@ -149,7 +164,10 @@
           "alt": "Comptoir de la pâtisserie en bois clair sous des suspensions en forme de goutte.",
           "caption": ""
         }
-      ]
+      ],
+      "blocks": [],
+      "heroBlocks": [],
+      "width": 80
     },
     {
       "slug": "table-hote-maison-privee",
@@ -224,27 +242,20 @@
           "format": "landscape"
         },
         {
-          "src": "assets/projects/04-table-hote/16-details-alpha.webp",
-          "kind": "cutout",
-          "alt": "Détails techniques du mobilier et des cloisons courbes.",
-          "caption": "Détails de conception des éléments sur mesure.",
-          "format": "portrait"
-        },
-        {
           "src": "assets/projects/04-table-hote/17-coupes-alpha.webp",
           "kind": "cutout",
           "alt": "Coupes intérieures de la maison privée.",
           "caption": "Coupes intérieures : relations de hauteur et continuité des usages.",
-          "format": "landscape"
-        },
-        {
-          "src": "assets/projects/04-table-hote/18-coupe-ee-alpha.webp",
-          "kind": "cutout",
-          "alt": "Coupe détaillée de la table d’hôte et de sa banquette.",
-          "caption": "Coupe détaillée de l’espace du repas.",
-          "format": "landscape"
+          "format": "landscape",
+          "width": 190,
+          "offsetX": -235
         }
-      ]
+      ],
+      "blocks": [],
+      "heroBlocks": [],
+      "width": 140,
+      "offsetX": -130,
+      "offsetY": 50
     },
     {
       "slug": "tiers-lieu",
@@ -266,19 +277,16 @@
           "kind": "cutout",
           "alt": "Maquette en carton : volumes, accès et couverture centrale.",
           "caption": "maquette échelle 1/100 du hall d'accueil de la plate taille. ",
-          "format": "portrait"
-        },
-        {
-          "src": "assets/projects/05-tiers-lieu/03-3d-casier.webp",
-          "kind": "detail",
-          "alt": "Vestiaire circulaire sous une canopée végétale suspendue.",
-          "caption": "les vestiaires démontrent l'utilisation des principes du miroir sans teint."
+          "format": "portrait",
+          "offsetX": -25,
+          "offsetY": 130
         },
         {
           "src": "assets/projects/05-tiers-lieu/05-3d-couloir-2.webp",
           "kind": "wide",
           "alt": "Galerie courbe avec alcôves textiles et panneaux acoustiques suspendus.",
-          "caption": "La banquette \"sans fond\" permet de plonger dans les grottes remplies de créatures magiques afin de se reposer après une journée de marche."
+          "caption": "La banquette \"sans fond\" permet de plonger dans les grottes remplies de créatures magiques afin de se reposer après une journée de marche.",
+          "offsetY": -105
         },
         {
           "src": "assets/projects/05-tiers-lieu/06-3d-entree-1.webp",
@@ -293,10 +301,19 @@
           "caption": "Le faux plafond en verre d'eau allié avec des projecteurs renvoient un effet de caustique sur le sol. une immersion dans les eaux des lacs"
         },
         {
+          "src": "assets/projects/05-tiers-lieu/03-3d-casier.webp",
+          "kind": "detail",
+          "alt": "Vestiaire circulaire sous une canopée végétale suspendue.",
+          "caption": "les vestiaires démontrent l'utilisation des principes du miroir sans teint.",
+          "width": 135,
+          "offsetY": -65
+        },
+        {
           "src": "assets/projects/05-tiers-lieu/08-3d-vue-dessus-2.webp",
           "kind": "wide",
           "alt": "Vue transversale du cœur central et de ses différents niveaux.",
-          "caption": "Le point central du projet est une banquette ronde d'où sont diffusées les légendes locales. un lieu de mystère et de rencontre au fond du puit de lumière"
+          "caption": "Le point central du projet est une banquette ronde d'où sont diffusées les légendes locales. un lieu de mystère et de rencontre au fond du puit de lumière",
+          "offsetX": 185
         },
         {
           "src": "assets/projects/05-tiers-lieu/13-matieres-alpha.webp",
@@ -325,15 +342,10 @@
           "alt": "Coupes du tiers-lieu et de sa coupole centrale.",
           "caption": "le desk d'accueil pensé pour l'usage quotidien des travailleurs",
           "format": "portrait"
-        },
-        {
-          "src": "assets/projects/05-tiers-lieu/17-coupe-aa-alpha.webp",
-          "kind": "cutout",
-          "alt": "Coupe longitudinale du tiers-lieu.",
-          "caption": "Coupe longitudinale : continuité entre accueil, galerie et espaces collectifs.",
-          "format": "landscape"
         }
-      ]
+      ],
+      "blocks": [],
+      "heroBlocks": []
     },
     {
       "slug": "maison-unifamiliale",
@@ -347,7 +359,7 @@
           "src": "assets/projects/06-maison-unifamiliale/04-3d-salon-1.webp",
           "kind": "wide",
           "alt": "Cuisine ouverte sur le séjour avec escalier intégré et foyer vitré.",
-          "caption": "Le patio comme fil conducteur se reflete dans l'ilot central de la cuisine, point de vie d'une famille.",
+          "caption": "Le patio comme fil conducteur se reflète dans l'ilot central de la cuisine, point de vie d'une famille. En plus de permettre un passage fluide, cet espace est ouvert et fait ainsi écho à l'ouverture et l'environnement extérieur des patios",
           "width": 65,
           "objectPosition": "left",
           "align": "left"
@@ -407,9 +419,12 @@
           "format": "landscape"
         }
       ],
-      "offsetY": 70,
-      "offsetX": -70,
-      "objectPosition": "right"
+      "offsetY": 50,
+      "offsetX": -325,
+      "objectPosition": "right",
+      "blocks": [],
+      "heroBlocks": [],
+      "width": 110
     },
     {
       "slug": "tables-gigognes",
@@ -434,7 +449,9 @@
           "format": "landscape"
         }
       ],
-      "coverKind": "cutout"
+      "coverKind": "cutout",
+      "blocks": [],
+      "heroBlocks": []
     },
     {
       "slug": "lampe",
@@ -455,7 +472,7 @@
           "src": "assets/projects/08-lampe/08-detail-alpha.webp",
           "kind": "cutout",
           "alt": "La lampe et son socle en usage, avec un téléphone raccordé.",
-          "caption": "Une problématique : le manque de prise. Cette lampe se greffe sur une multi prise assurant un nombre suffisant de prises pour charger tous les appareils nécéssaires",
+          "caption": "Une problématique : le manque de prise. Cette lampe se greffe sur une multi prise assurant un nombre suffisant de prises pour charger tous les appareils nécessaires",
           "format": "portrait"
         },
         {
@@ -480,7 +497,11 @@
           "format": "portrait"
         }
       ],
-      "coverKind": "cutout"
+      "coverKind": "cutout",
+      "blocks": [],
+      "heroBlocks": [],
+      "width": 95,
+      "offsetY": 0
     },
     {
       "slug": "scenographie-minimaliste",
@@ -511,7 +532,10 @@
         }
       ],
       "coverKind": "photo",
-      "width": 75
+      "width": 75,
+      "blocks": [],
+      "heroBlocks": [],
+      "offsetY": 40
     },
     {
       "slug": "scenographie-personnelle",
@@ -525,7 +549,8 @@
           "src": "assets/projects/10-scenographie-personnelle/02-scenographie.jpg",
           "kind": "wide",
           "alt": "Espace de lecture et bibliothèque suspendue.",
-          "caption": "sélection des gouts et hobby favoris afin de concevoir l'intérieur parfait pour une personne aussi complexe qu'intéressante"
+          "caption": "sélection des gouts et hobby favoris afin de concevoir l'intérieur parfait pour une personne aussi complexe qu'intéressante",
+          "offsetX": 0
         },
         {
           "src": "assets/projects/10-scenographie-personnelle/03-scenographie.jpg",
@@ -537,12 +562,15 @@
           "src": "assets/projects/10-scenographie-personnelle/04-scenographie.jpg",
           "kind": "wide",
           "alt": "Chambre : lit à baldaquin et séparation ajourée.",
-          "caption": "Chaque loisir, chaque envie, chaque intérêt s'incarne dans une chambre d'hôtel entièrement personnalisée"
+          "caption": "Chaque loisir, chaque envie, chaque intérêt s'incarne dans une chambre d'hôtel entièrement personnalisée. L'intérieur reflète une personnalité. Cette chambre en est la démonstration"
         }
       ],
       "coverKind": "cutout",
-      "width": 100,
-      "offsetY": -20
+      "width": 185,
+      "offsetY": -25,
+      "blocks": [],
+      "heroBlocks": [],
+      "offsetX": -430
     }
   ]
 }

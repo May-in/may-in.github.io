@@ -8,7 +8,7 @@ let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=11"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=12"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -153,7 +153,7 @@ function renderSocialLinks(site) {
 
 function radiusClass(value) { return `radius-${safeToken(value, 'soft')}`; }
 function imageStyle(item = {}) {
-  const width = Math.max(25, Math.min(100, Number(item.width) || 100));
+  const width = Math.max(25, Math.min(200, Number(item.width) || 100));
   const position = safeToken(item.objectPosition, 'center');
   const offsetX = boundedSetting(item.offsetX, -1200, 1200, 0);
   const offsetY = boundedSetting(item.offsetY, -1200, 1200, 0);
@@ -161,6 +161,12 @@ function imageStyle(item = {}) {
   return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px;--media-span:${span}`;
 }
 function mediaGridClass(item = {}) { return [4, 6, 8, 12].includes(Number(item.columnSpan)) ? ' media-grid--custom' : ''; }
+function projectCardStyle(project = {}) {
+  const span = [4, 6, 8, 10, 12].includes(Number(project.cardSpan)) ? Number(project.cardSpan) : 12;
+  const align = ['start', 'center', 'end'].includes(project.cardAlign) ? project.cardAlign : 'start';
+  return `--card-span:${span};--card-align:${align}`;
+}
+function projectCardSizeClass(project = {}) { return [4, 6, 8, 10, 12].includes(Number(project.cardSpan)) ? ' project-card--custom-size' : ''; }
 function blockSurface(block = {}) {
   const surfaces = { paper: 'var(--paper)', soft: 'var(--soft)', ink: 'var(--ink)', accent: 'var(--wine)' };
   return block.surface === 'custom' ? (block.background || 'transparent') : (surfaces[block.surface] || 'transparent');
@@ -174,7 +180,7 @@ function boundedSetting(value, minimum, maximum, fallback) {
   return Number.isFinite(number) ? Math.max(minimum, Math.min(maximum, number)) : fallback;
 }
 function blockStyle(block = {}) {
-  const width = boundedSetting(block.width, 25, 100, 100);
+  const width = boundedSetting(block.width, 25, 200, 100);
   const minHeight = boundedSetting(block.minHeight, 0, 520, 0);
   const padding = boundedSetting(block.padding, 0, 120, 0);
   const gap = boundedSetting(block.spacing, 0, 240, 36);
@@ -196,32 +202,34 @@ function applyElementStyles(site, captureBase = false) {
   document.querySelectorAll('[data-edit-inline]').forEach((element, index) => {
     const styleId = element.dataset.editStyleId || `${page || 'home'}-text-${index}`;
     element.dataset.editStyleId = styleId;
+    const layoutElement = element.closest('.large-link,.contact-link') || element;
     if (captureBase || element.dataset.baseHidden === undefined) element.dataset.baseHidden = String(element.hidden);
     const style = site.elementStyles?.[styleId];
-    ['font-family','font-size','text-align','color','background','display','width','max-width','margin-left','margin-right','min-height','padding','border-radius','transform'].forEach((property) => element.style.removeProperty(property));
+    ['font-family','font-size','text-align','color','background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'].forEach((property) => element.style.removeProperty(property));
+    if (layoutElement !== element) ['background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'].forEach((property) => layoutElement.style.removeProperty(property));
     element.hidden = element.dataset.baseHidden === 'true';
     if (!style) return;
     const number = (value, min, max) => Number.isFinite(Number(value)) ? Math.max(min, Math.min(max, Number(value))) : null;
     const fontSize = number(style.fontSize, 10, 160);
-    const width = number(style.width, 20, 100);
+    const width = number(style.width, 20, 200);
     const padding = number(style.padding, 0, 160);
     const minHeight = number(style.minHeight, 0, 720);
-    const offsetX = number(style.offsetX, -500, 500) || 0;
-    const offsetY = number(style.offsetY, -500, 500) || 0;
+    const offsetX = number(style.offsetX, -1200, 1200) || 0;
+    const offsetY = number(style.offsetY, -1200, 1200) || 0;
     if (Object.hasOwn(style, 'hidden')) element.hidden = Boolean(style.hidden);
     if (style.fontFamily) element.style.fontFamily = `var(--${safeToken(style.fontFamily, 'sans')})`;
     if (fontSize !== null) element.style.fontSize = `${fontSize}px`;
     if (style.textAlign) element.style.textAlign = safeToken(style.textAlign, 'left');
     if (style.textColor && style.textColor !== 'inherit') element.style.color = paletteValue(style, style.textColor, site);
-    if (style.background && style.background !== 'none') element.style.background = paletteValue(style, style.background, site, 'backgroundColor');
-    if (width !== null || padding !== null || minHeight !== null || (style.background && style.background !== 'none') || offsetX || offsetY) element.style.display = 'block';
-    if (width !== null) { element.style.width = `${width}%`; element.style.maxWidth = '100%'; }
-    if (style.align === 'center') element.style.marginInline = 'auto';
-    if (style.align === 'right') element.style.marginLeft = 'auto';
-    if (padding !== null) element.style.padding = `${padding}px`;
-    if (minHeight !== null) element.style.minHeight = `${minHeight}px`;
-    if (style.radius) element.style.borderRadius = `${number(style.radius, 0, 100) || 0}px`;
-    if (offsetX || offsetY) element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    if (style.background && style.background !== 'none') layoutElement.style.background = paletteValue(style, style.background, site, 'backgroundColor');
+    if (width !== null || padding !== null || minHeight !== null || (style.background && style.background !== 'none') || offsetX || offsetY) layoutElement.style.display = layoutElement.matches('.large-link,.contact-link') ? 'inline-flex' : 'block';
+    if (width !== null) { layoutElement.style.width = `${width}%`; layoutElement.style.maxWidth = 'none'; }
+    if (style.align === 'center') layoutElement.style.marginInline = 'auto';
+    if (style.align === 'right') layoutElement.style.marginLeft = 'auto';
+    if (padding !== null) layoutElement.style.padding = `${padding}px`;
+    if (minHeight !== null) layoutElement.style.minHeight = `${minHeight}px`;
+    if (style.radius) layoutElement.style.borderRadius = `${number(style.radius, 0, 100) || 0}px`;
+    if (offsetX || offsetY) layoutElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
   });
 }
 function categoryLabel(category) { return category === 'public' ? runtime.site.publicLabel : runtime.site.privateLabel; }
@@ -230,7 +238,7 @@ function projectCard(project, index) {
   const image = project.cover ? `<img src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" loading="lazy" decoding="async" />` : '<span class="project-image__empty">Image à ajouter</span>';
   const cutout = project.coverKind === 'cutout' ? ' project-card--cutout' : '';
   const radius = radiusClass(project.coverRadius || 'soft');
-  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout} ${radius}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-image" style="${imageStyle(project)}">${image}</div><div class="project-meta"><span>${categoryLabel(project.category)}</span><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span><span class="project-arrow">↗</span></div><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2></a>`;
+  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-image" style="${imageStyle(project)}" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><div class="project-meta"><span>${categoryLabel(project.category)}</span><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span><span class="project-arrow" aria-hidden="true">↗</span></div><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2></a>`;
 }
 
 function renderProjects(projects) {
@@ -380,10 +388,10 @@ function updatePreviewValue(path, value) {
     if (hero) hero.src = assetSrc(value);
     return;
   }
-  const coverMatch = path.match(/^projects\.(\d+)\.(cover|coverKind|coverRadius|width|objectPosition|offsetX|offsetY)$/);
+  const coverMatch = path.match(/^projects\.(\d+)\.(cover|coverKind|coverRadius|width|cardSpan|cardAlign|objectPosition|offsetX|offsetY)$/);
   if (coverMatch) {
     const project = runtime.projects[Number(coverMatch[1])];
-    const hero = document.querySelector(`[data-edit-path="projects.${coverMatch[1]}.cover"]`);
+    const hero = document.querySelector(`.project-hero__image[data-edit-path="projects.${coverMatch[1]}.cover"]`);
     const card = document.querySelector(`[data-edit-path="projects.${coverMatch[1]}"]`);
     if (hero) {
       if (coverMatch[2] === 'cover') hero.src = assetSrc(project.cover);
@@ -396,6 +404,8 @@ function updatePreviewValue(path, value) {
       const image = card.querySelector('.project-image');
       if (coverMatch[2] === 'cover' && image?.querySelector('img')) image.querySelector('img').src = assetSrc(project.cover);
       if (image) image.style.cssText = imageStyle(project);
+      card.style.cssText = projectCardStyle(project);
+      card.classList.toggle('project-card--custom-size', [4, 6, 8, 10, 12].includes(Number(project.cardSpan)));
       card.classList.toggle('project-card--cutout', project.coverKind === 'cutout');
       card.classList.remove('radius-none', 'radius-soft', 'radius-top-right', 'radius-diagonal', 'radius-all', 'radius-pill');
       card.classList.add(radiusClass(project.coverRadius || 'soft'));
@@ -435,7 +445,7 @@ function prepareAdminPreview() {
   document.body.classList.add('admin-preview');
   document.body.classList.toggle('admin-preview--edit', previewEditMode);
   const coarsePointer = matchMedia('(pointer:coarse)').matches;
-  document.querySelectorAll('[data-edit-inline]').forEach((element) => { element.contentEditable = previewEditMode && !coarsePointer && !element.closest('a, button') ? 'plaintext-only' : 'false'; element.spellcheck = true; });
+  document.querySelectorAll('[data-edit-inline]').forEach((element) => { element.contentEditable = previewEditMode && !coarsePointer ? 'plaintext-only' : 'false'; element.spellcheck = true; });
   const hero = document.querySelector('.home-hero');
   if (hero && !hero.querySelector('.admin-image-handle')) {
     hero.insertAdjacentHTML('beforeend', '<button class="admin-image-handle" type="button" data-edit-path="site.heroImage" data-edit-label="Image de fond">✎ Image de fond</button>');
@@ -450,17 +460,31 @@ if (isAdminPreview) {
   let touchStart = null;
   let touchSelectionUntil = 0;
   let selectedPreviewElement = null;
+  const editableAtPoint = (event) => {
+    const direct = event.target.closest?.('[data-edit-path]');
+    if (direct?.dataset.editInline === 'true') return direct;
+    const seen = new Set();
+    const stacked = document.elementsFromPoint(event.clientX, event.clientY).map((node) => node.closest?.('[data-edit-path]')).filter((node) => node && !seen.has(node) && seen.add(node));
+    return stacked.find((node) => node.dataset.editInline === 'true') || direct || stacked[0] || null;
+  };
+  const placeCaretAtPoint = (element, event) => {
+    if (element.dataset.editInline !== 'true' || element.contentEditable === 'false') return;
+    element.focus({ preventScroll: true });
+    const range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
+    if (!range || !element.contains(range.startContainer)) return;
+    const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range);
+  };
   const selectPreviewElement = (event) => {
     if (!previewEditMode) return;
-    const editable = event.target.closest('[data-edit-path]');
+    const editable = editableAtPoint(event);
     if (!editable) return;
     const inline = editable.dataset.editInline === 'true';
-    const allowsNativeClick = inline && !editable.closest('a, button');
-    if (!allowsNativeClick) { event.preventDefault(); event.stopPropagation(); }
+    if (!inline || editable.closest('a, button')) { event.preventDefault(); event.stopPropagation(); }
     if (selectedPreviewElement && selectedPreviewElement !== editable) selectedPreviewElement.classList.remove('admin-selected');
     editable.classList.add('admin-selected');
     selectedPreviewElement = editable;
     window.parent.postMessage({ type: 'mayin:select', path: editable.dataset.editPath, styleId: editable.dataset.editStyleId || '', label: editable.dataset.editLabel || 'Élément' }, location.origin);
+    if (inline) requestAnimationFrame(() => placeCaretAtPoint(editable, event));
   };
   document.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'touch' || event.pointerType === 'pen') touchStart = { x: event.clientX, y: event.clientY, id: event.pointerId };

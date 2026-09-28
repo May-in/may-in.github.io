@@ -8,7 +8,7 @@ let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=10"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=11"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -29,8 +29,8 @@ function normaliseSite(site) {
     creatorName: 'Célia May',
     menuLabel: 'Menu', filterAllLabel: 'Tous', filterPrivateLabel: 'Privé', filterPublicLabel: 'Public',
     privateLabel: 'Privé', publicLabel: 'Public', projectBackLabel: 'Tous les projets', projectTypeLabel: 'Projet',
-    projectSummaryLabel: 'En bref', projectAllLabel: 'Tous les projets', aboutContactEyebrow: 'Parlons de votre projet',
-    aboutContactLabel: 'Me contacter', copyright: `© ${new Date().getFullYear()}`, notFoundEyebrow: '404 · May’in',
+    projectSummaryLabel: 'En bref', projectAllLabel: 'Tous les projets', aboutContactEyebrow: 'Échanger autour du portfolio',
+    aboutContactLabel: 'Prendre contact', copyright: `© ${new Date().getFullYear()}`, notFoundEyebrow: '404 · May’in',
     notFoundTitle: 'Cette page n’existe pas.', notFoundLinkLabel: 'Retour à l’accueil'
   };
   Object.entries(defaults).forEach(([key, value]) => { if (site[key] === undefined) site[key] = value; });
@@ -47,7 +47,7 @@ function normaliseSite(site) {
   site.gallery.items ||= [];
   site.customBlocks ||= {};
   site.elementStyles ||= {};
-  ['home', 'projects', 'gallery', 'about', 'contact', 'notFound'].forEach((key) => { site.customBlocks[key] ||= []; });
+  ['home', 'projects', 'gallery', 'about', 'contact', 'notFound', 'homeHero', 'projectsHero', 'galleryHero', 'aboutHero', 'contactHero', 'notFoundHero'].forEach((key) => { site.customBlocks[key] ||= []; });
   return site;
 }
 
@@ -135,7 +135,7 @@ function applyStructuredData(site) {
     '@graph': [
       { '@type': 'WebSite', '@id': `${base}/#website`, url: `${base}/`, name: site.name, alternateName: ['May-in', 'May In', 'Mayin'], inLanguage: 'fr-BE' },
       { '@type': 'Organization', '@id': `${base}/#studio`, name: site.name, alternateName: ['May-in', 'May In', 'Mayin'], url: `${base}/`, logo: `${base}/favicon.png`, image: `${base}/${String(site.socialImage || 'assets/social-preview.png').replace(/^\//, '')}`, description: site.seoDescription, areaServed: ['Mons', 'Thuin', 'Charleroi', 'Hainaut', 'Wallonie'], founder: { '@id': `${base}/#celia-may` } },
-      { '@type': 'Person', '@id': `${base}/#celia-may`, name: creator, jobTitle: 'Architecte d’intérieur', worksFor: { '@id': `${base}/#studio` } }
+      { '@type': 'Person', '@id': `${base}/#celia-may`, name: creator, jobTitle: 'Étudiante en architecture intérieure', memberOf: { '@id': `${base}/#studio` } }
     ]
   };
   let node = document.querySelector('#structured-data');
@@ -155,10 +155,12 @@ function radiusClass(value) { return `radius-${safeToken(value, 'soft')}`; }
 function imageStyle(item = {}) {
   const width = Math.max(25, Math.min(100, Number(item.width) || 100));
   const position = safeToken(item.objectPosition, 'center');
-  const offsetX = boundedSetting(item.offsetX, -500, 500, 0);
-  const offsetY = boundedSetting(item.offsetY, -500, 500, 0);
-  return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px`;
+  const offsetX = boundedSetting(item.offsetX, -1200, 1200, 0);
+  const offsetY = boundedSetting(item.offsetY, -1200, 1200, 0);
+  const span = [4, 6, 8, 12].includes(Number(item.columnSpan)) ? Number(item.columnSpan) : 12;
+  return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px;--media-span:${span}`;
 }
+function mediaGridClass(item = {}) { return [4, 6, 8, 12].includes(Number(item.columnSpan)) ? ' media-grid--custom' : ''; }
 function blockSurface(block = {}) {
   const surfaces = { paper: 'var(--paper)', soft: 'var(--soft)', ink: 'var(--ink)', accent: 'var(--wine)' };
   return block.surface === 'custom' ? (block.background || 'transparent') : (surfaces[block.surface] || 'transparent');
@@ -180,9 +182,10 @@ function blockStyle(block = {}) {
   const align = safeToken(block.align, 'left');
   const textAlign = safeToken(block.textAlign, 'left');
   const font = safeToken(block.fontFamily, 'sans');
-  const offsetX = boundedSetting(block.offsetX, -500, 500, 0);
-  const offsetY = boundedSetting(block.offsetY, -500, 500, 0);
-  return `--block-width:${width}%;--block-min-height:${minHeight}px;--block-padding:${padding}px;--block-gap:${gap}px;--block-font-size:${fontSize}px;--block-align:${align};--block-text-align:${textAlign};--block-font:var(--${font});--block-color:${blockTextColor(block)};--block-background:${blockSurface(block)};--block-offset-x:${offsetX}px;--block-offset-y:${offsetY}px`;
+  const offsetX = boundedSetting(block.offsetX, -1200, 1200, 0);
+  const offsetY = boundedSetting(block.offsetY, -1200, 1200, 0);
+  const span = [4, 6, 8, 12].includes(Number(block.columnSpan)) ? Number(block.columnSpan) : 12;
+  return `--block-width:${width}%;--block-min-height:${minHeight}px;--block-padding:${padding}px;--block-gap:${gap}px;--block-font-size:${fontSize}px;--block-align:${align};--block-text-align:${textAlign};--block-font:var(--${font});--block-color:${blockTextColor(block)};--block-background:${blockSurface(block)};--block-offset-x:${offsetX}px;--block-offset-y:${offsetY}px;--block-span:${span}`;
 }
 function paletteValue(style, key, site, customKey = 'customColor') {
   const palette = (site.design?.palettes || []).find((item) => item.id === site.design?.activePalette) || site.design?.palettes?.[0] || {};
@@ -263,22 +266,23 @@ function renderProjectPage(projects) {
   const media = (project.media || []).map((item, mediaIndex) => {
     const placement = item.align || ['left', 'right', 'center'][mediaIndex % 3];
     const radius = radiusClass(item.radius || (item.kind === 'cutout' || item.kind === 'plan' ? 'none' : 'soft'));
-    return `<figure class="project-media project-media--${safeToken(item.kind, 'wide')} project-media--${safeToken(placement, 'center')} project-media--${safeToken(item.format, 'landscape')} ${radius}" style="${imageStyle(item)}" data-edit-path="projects.${projectIndex}.media.${mediaIndex}" data-edit-label="Image du projet"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || `Vue du projet ${project.title}`)}" loading="lazy" decoding="async" /><figcaption data-edit-path="projects.${projectIndex}.media.${mediaIndex}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</figcaption></figure>`;
+    return `<figure class="project-media project-media--${safeToken(item.kind, 'wide')} project-media--${safeToken(placement, 'center')} project-media--${safeToken(item.format, 'landscape')}${mediaGridClass(item)} ${radius}" style="${imageStyle(item)}" data-edit-path="projects.${projectIndex}.media.${mediaIndex}" data-edit-label="Image du projet"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || `Vue du projet ${project.title}`)}" loading="lazy" decoding="async" /><figcaption data-edit-path="projects.${projectIndex}.media.${mediaIndex}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</figcaption></figure>`;
   }).join('');
   const blocks = renderBlocks(project.blocks || [], `projects.${projectIndex}.blocks`);
-  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1>${hero}</section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
+  const heroBlocks = renderBlocks(project.heroBlocks || [], `projects.${projectIndex}.heroBlocks`, 'custom-blocks--hero custom-blocks--cover');
+  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1><div class="project-hero__visual">${hero}<div class="hero-block-zone hero-block-zone--cover">${heroBlocks}</div></div></section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
 }
 
 function renderGallery(site) {
   const grid = document.querySelector('#gallery-grid'); if (!grid) return;
   const items = site.gallery?.items || [];
   document.querySelector('.gallery-empty')?.classList.toggle('gallery-empty--with-items', items.length > 0);
-  grid.innerHTML = items.map((item, index) => `<figure class="gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')} ${radiusClass(item.radius || 'soft')}" data-edit-path="site.gallery.items.${index}" data-edit-label="Image de galerie" style="${imageStyle(item)}"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || item.caption || '')}" loading="lazy" /><figcaption><span>${escapeHtml(item.category || '')}</span><span data-edit-path="site.gallery.items.${index}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</span>${item.credit ? `<small>${escapeHtml(item.credit)}</small>` : ''}</figcaption></figure>`).join('');
+  grid.innerHTML = items.map((item, index) => `<figure class="gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}" data-edit-path="site.gallery.items.${index}" data-edit-label="Image de galerie" style="${imageStyle(item)}"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || item.caption || '')}" loading="lazy" /><figcaption><span>${escapeHtml(item.category || '')}</span><span data-edit-path="site.gallery.items.${index}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</span>${item.credit ? `<small>${escapeHtml(item.credit)}</small>` : ''}</figcaption></figure>`).join('');
 }
 
-function renderBlocks(blocks, basePath) {
+function renderBlocks(blocks, basePath, extraClass = '') {
   if (!blocks?.length) return '';
-  return `<section class="custom-blocks">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
+  return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
     const path = `${basePath}.${index}`;
     const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}`;
     const style = `${imageStyle(block)};${blockStyle(block)}`;
@@ -293,8 +297,25 @@ function renderBlocks(blocks, basePath) {
 function renderCustomBlocks(site) {
   document.querySelectorAll('[data-custom-blocks]').forEach((container) => {
     const key = container.dataset.customBlocks;
-    container.innerHTML = renderBlocks(site.customBlocks?.[key] || [], `site.customBlocks.${key}`);
+    container.innerHTML = renderBlocks(site.customBlocks?.[key] || [], `site.customBlocks.${key}`, key.endsWith('Hero') ? 'custom-blocks--hero' : '');
   });
+}
+
+function ensureHeroBlockZone() {
+  if (!page || page === 'project') return;
+  const key = `${page}Hero`;
+  if (document.querySelector(`[data-custom-blocks="${key}"]`)) return;
+  let host = null;
+  let before = null;
+  if (page === 'home') { host = document.querySelector('.home-hero__content'); before = host?.querySelector('.home-hero__bottom'); }
+  else if (page === 'contact') { host = document.querySelector('.contact-main'); before = host?.querySelector('.contact-details'); }
+  else if (page === 'notFound') { host = document.querySelector('.not-found'); before = host?.querySelector('a'); }
+  else host = document.querySelector('.page-heading');
+  if (!host) return;
+  const zone = document.createElement('div');
+  zone.className = 'hero-block-zone';
+  zone.dataset.customBlocks = key;
+  before ? host.insertBefore(zone, before) : host.append(zone);
 }
 
 let telemetryStarted = false;
@@ -313,7 +334,7 @@ function startAnonymousAnalytics(site) {
 function renderContactForm(site) {
   if (page !== 'contact' || isAdminPreview || document.querySelector('#mayin-contact-form') || !site.admin?.contactFormEnabled || !site.admin?.apiBase) return;
   const target = document.querySelector('.contact-main'); if (!target) return;
-  target.insertAdjacentHTML('beforeend', `<section class="contact-form"><p class="eyebrow">Message rapide</p><p>Pour une première prise de contact, laisse un court message et ton e-mail afin que May’in puisse te répondre.</p><form id="mayin-contact-form"><label>Prénom ou nom<input name="name" maxlength="80" autocomplete="name" /></label><label>E-mail<input name="email" type="email" maxlength="150" autocomplete="email" required /></label><label>Votre message<textarea name="message" minlength="8" maxlength="600" required></textarea></label><input class="contact-form__trap" name="website" tabindex="-1" autocomplete="off" /><button type="submit">Envoyer le message <span>↗</span></button><p class="contact-form__status" role="status"></p></form></section>`);
+  target.insertAdjacentHTML('beforeend', `<section class="contact-form"><p class="eyebrow">Message rapide</p><p>Pour une question, un stage, une collaboration ou un retour sur le portfolio, laisse un court message et ton e-mail.</p><form id="mayin-contact-form"><label>Prénom ou nom<input name="name" maxlength="80" autocomplete="name" /></label><label>E-mail<input name="email" type="email" maxlength="150" autocomplete="email" required /></label><label>Votre message<textarea name="message" minlength="8" maxlength="600" required></textarea></label><input class="contact-form__trap" name="website" tabindex="-1" autocomplete="off" /><button type="submit">Envoyer le message <span>↗</span></button><p class="contact-form__status" role="status"></p></form></section>`);
   const form = document.querySelector('#mayin-contact-form'); const status = form.querySelector('.contact-form__status');
   form.addEventListener('submit', async (event) => { event.preventDefault(); const fields = new FormData(form); const button = form.querySelector('button'); button.disabled = true; status.textContent = 'Envoi…';
     try { const response = await fetch(studioApi(site, '/public/message'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(fields)) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); form.reset(); status.textContent = 'Message envoyé. Merci.'; }
@@ -331,6 +352,7 @@ function renderAll(site, projects) {
   if (page === 'projects') renderProjects(runtime.projects);
   if (page === 'project') renderProjectPage(runtime.projects);
   if (page === 'gallery') renderGallery(runtime.site);
+  ensureHeroBlockZone();
   renderCustomBlocks(runtime.site);
   renderContactForm(runtime.site);
   applyElementStyles(runtime.site, true);
@@ -380,9 +402,9 @@ function updatePreviewValue(path, value) {
     }
     return;
   }
-  const mediaMatch = path.match(/^projects\.(\d+)\.media\.(\d+)\.(src|radius|kind|format|align|width|objectPosition|offsetX|offsetY)$/);
-  const galleryMatch = path.match(/^site\.gallery\.items\.(\d+)\.(src|radius|size|format|width|objectPosition|offsetX|offsetY)$/);
-  const blockMatch = path.match(/^(site\.customBlocks\.[^.]+\.\d+|projects\.\d+\.blocks\.\d+)\.(src|radius|format|width|align|spacing|fontFamily|fontSize|textAlign|textColor|color|surface|background|padding|minHeight|offsetX|offsetY)$/);
+  const mediaMatch = path.match(/^projects\.(\d+)\.media\.(\d+)\.(src|radius|kind|format|align|width|columnSpan|objectPosition|offsetX|offsetY)$/);
+  const galleryMatch = path.match(/^site\.gallery\.items\.(\d+)\.(src|radius|size|format|width|columnSpan|objectPosition|offsetX|offsetY)$/);
+  const blockMatch = path.match(/^(site\.customBlocks\.[^.]+\.\d+|projects\.\d+\.(?:blocks|heroBlocks)\.\d+)\.(src|radius|format|width|columnSpan|align|spacing|fontFamily|fontSize|textAlign|textColor|color|surface|background|padding|minHeight|offsetX|offsetY)$/);
   if (mediaMatch || galleryMatch || blockMatch) {
     const base = mediaMatch ? `projects.${mediaMatch[1]}.media.${mediaMatch[2]}` : galleryMatch ? `site.gallery.items.${galleryMatch[1]}` : blockMatch[1];
     const element = [...document.querySelectorAll('[data-edit-path]')].find((item) => item.dataset.editPath === base);
@@ -393,10 +415,10 @@ function updatePreviewValue(path, value) {
     if (mediaMatch) {
       element.style.cssText = imageStyle(item);
       const placement = item.align || ['left', 'right', 'center'][Number(mediaMatch[2]) % 3];
-      element.className = `project-media project-media--${safeToken(item.kind, 'wide')} project-media--${safeToken(placement, 'center')} project-media--${safeToken(item.format, 'landscape')} ${radiusClass(item.radius || (item.kind === 'cutout' || item.kind === 'plan' ? 'none' : 'soft'))}${selected}`;
+      element.className = `project-media project-media--${safeToken(item.kind, 'wide')} project-media--${safeToken(placement, 'center')} project-media--${safeToken(item.format, 'landscape')}${mediaGridClass(item)} ${radiusClass(item.radius || (item.kind === 'cutout' || item.kind === 'plan' ? 'none' : 'soft'))}${selected}`;
     } else if (galleryMatch) {
       element.style.cssText = imageStyle(item);
-      element.className = `gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')} ${radiusClass(item.radius || 'soft')}${selected}`;
+      element.className = `gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}${selected}`;
     } else {
       element.style.cssText = `${imageStyle(item)};${blockStyle(item)}`;
       const classes = `custom-block--align-${safeToken(item.align, 'left')} custom-block--${safeToken(item.format, 'original')}`;

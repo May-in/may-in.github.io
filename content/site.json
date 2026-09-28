@@ -1,11 +1,12 @@
 {
   "schemaVersion": 3,
   "name": "May’in",
+  "studioVersion": "1.4.0",
   "creatorName": "Célia May",
-  "role": "Architecture intérieure · Design · Scénographie",
-  "domain": "https://may-in.github.io",
-  "seoTitle": "May’in — Architecte d’intérieur à Mons | Célia May",
-  "seoDescription": "May’in est le portfolio de Célia May, architecte d’intérieur à Mons, active à Thuin, Charleroi et dans le Hainaut en architecture intérieure, design et scénographie.",
+  "role": "Portfolio étudiant · Architecture intérieure · Design · Scénographie",
+  "domain": "https://may-in.be",
+  "seoTitle": "May’in — Portfolio d’architecture intérieure | Célia May",
+  "seoDescription": "May’in est le portfolio étudiant de Célia May, basé dans la région de Mons : architecture intérieure, design et scénographie, avec des projets à découvrir à Thuin, Charleroi et dans le Hainaut.",
   "socialImage": "assets/social-preview.png",
   "heroImage": "assets/projects/03-patisserie/05-vue-1.webp",
   "intro": "Architecture intérieure · Design · Scénographie",
@@ -27,20 +28,20 @@
   "projectsTitle": "Projets",
   "aboutEyebrow": "À propos",
   "aboutTitle": "À propos de May’in.",
-  "aboutLead": "May’in rassemble les projets d’architecture d'intérieur, de design et de scénographie de Célia May, basée dans la région de Mons et active à Thuin, Charleroi et dans le Hainaut.",
+  "aboutLead": "May’in est le portfolio étudiant de Célia May. Il rassemble ses projets et recherches en architecture intérieure, design et scénographie, depuis la région de Mons.",
   "aboutLeft": "",
   "aboutRight": "",
-  "aboutContactEyebrow": "Parlons de votre projet",
-  "aboutContactLabel": "Me contacter",
+  "aboutContactEyebrow": "Échanger autour du portfolio",
+  "aboutContactLabel": "Prendre contact",
   "galleryEyebrow": "Regards",
   "galleryPageTitle": "Galerie",
   "galleryTitle": "Visites, inspirations et visites personnelles",
   "galleryText": "Lors de mes voyages et visites, j'ai pu être confrontée à diverses architectures, à de nouvelles sources d'inspiration mais également à la découverte de nouvelles choses. C'est donc ici que je choisi de les partager. ",
   "contactEyebrow": "Contact",
-  "contactTitle": "Parlons de votre projet.",
+  "contactTitle": "Échangeons.",
   "email": "",
   "phone": "",
-  "contactDetails": "Utilisez le formulaire ci-dessous pour une première prise de contact.",
+  "contactDetails": "Pour une question, un stage, une collaboration ou un retour sur le portfolio, utilisez le formulaire ci-dessous.",
   "socials": "",
   "copyright": "© 2026",
   "notFoundEyebrow": "404 · May’in",
@@ -84,6 +85,27 @@
     "items": []
   },
   "customBlocks": {
+    "homeHero": [
+      {
+        "type": "text",
+        "style": "body",
+        "text": "Étudiante en architecture intérieure",
+        "width": 100,
+        "columnSpan": 12,
+        "align": "left",
+        "spacing": 0,
+        "fontFamily": "mono",
+        "fontSize": 14,
+        "textAlign": "left",
+        "textColor": "paper",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "none",
+        "offsetX": 0,
+        "offsetY": 0
+      }
+    ],
     "home": [
       {
         "type": "text",
@@ -94,7 +116,9 @@
         "offsetY": -440
       }
     ],
+    "projectsHero": [],
     "projects": [],
+    "galleryHero": [],
     "gallery": [
       {
         "type": "image",
@@ -129,6 +153,7 @@
         "offsetX": -20
       }
     ],
+    "aboutHero": [],
     "about": [
       {
         "type": "image",
@@ -196,7 +221,9 @@
         "offsetX": -15
       }
     ],
+    "contactHero": [],
     "contact": [],
+    "notFoundHero": [],
     "notFound": []
   },
   "design": {

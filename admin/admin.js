@@ -90,12 +90,35 @@ function normalizeBackup(payload) {
   return { site, projects };
 }
 
+function upgradeDraftShape(payload, reference = publishedData) {
+  if (!payload?.site || !Array.isArray(payload.projects)) return payload;
+  const site = payload.site;
+  const publicSite = reference?.site || {};
+  site.customBlocks ||= {};
+  ['home','projects','gallery','about','contact','notFound','projectsHero','galleryHero','aboutHero','contactHero','notFoundHero'].forEach((key) => { site.customBlocks[key] ||= []; });
+  if (!Array.isArray(site.customBlocks.homeHero)) site.customBlocks.homeHero = clone(publicSite.customBlocks?.homeHero || []);
+  payload.projects.forEach((project) => { project.blocks ||= []; project.media ||= []; project.heroBlocks ||= []; });
+  const legacyText = {
+    aboutLead: 'May’in rassemble les projets d’architecture intérieure, de design et de scénographie de Célia May, basée dans la région de Mons et active à Thuin, Charleroi et dans le Hainaut.',
+    aboutContactEyebrow: 'Parlons de votre projet',
+    aboutContactLabel: 'Me contacter',
+    contactTitle: 'Parlons de votre projet.',
+    contactDetails: 'Utilisez le formulaire ci-dessous pour une première prise de contact.',
+    role: 'Architecture intérieure · Design · Scénographie',
+    seoTitle: 'May’in — Architecte d’intérieur à Mons | Célia May',
+    seoDescription: 'May’in est le portfolio de Célia May, architecte d’intérieur à Mons, active à Thuin, Charleroi et dans le Hainaut en architecture intérieure, design et scénographie.'
+  };
+  Object.entries(legacyText).forEach(([key, oldValue]) => { if (site[key] === oldValue && publicSite[key]) site[key] = publicSite[key]; });
+  if (publicSite.studioVersion) site.studioVersion = publicSite.studioVersion;
+  return payload;
+}
+
 async function importBackup(file) {
   try {
     const restored = normalizeBackup(JSON.parse(await file.text()));
     if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
-    data = clone(restored);
+    data = upgradeDraftShape(clone(restored));
     selectedPath = '';
     selectedStyleId = '';
     inlineSessionPath = '';
@@ -187,6 +210,9 @@ function choices(label, path, values) {
 function blockControls(basePath) {
   return `<div class="form-section"><h3>Ajouter un bloc</h3><div class="add-blocks"><button data-add-block="text" data-block-base="${basePath}">+ Texte</button><button data-add-block="lead" data-block-base="${basePath}">+ Grand texte</button><button data-add-block="quote" data-block-base="${basePath}">+ Citation</button><button data-add-block="image" data-block-base="${basePath}">+ Image</button><button data-add-block="divider" data-block-base="${basePath}">+ Ligne</button><button data-add-block="spacer" data-block-base="${basePath}">+ Espace</button></div></div>`;
 }
+function responsiveWidthField(path) {
+  return field('Place dans la ligne (ordinateur)', path, 'select', { choices: [['','Automatique'],['12','Pleine ligne'],['8','Deux tiers'],['6','Moitié'],['4','Un tiers · 3 images par ligne']] });
+}
 function contentLabel(item, fallback = 'Élément') {
   if (item.type === 'image' || item.src) return item.caption || item.alt || 'Image';
   if (item.type === 'quote') return 'Citation';
@@ -200,7 +226,7 @@ function contentOutline(basePath, items = [], title = 'Ordre') {
 }
 function styleBlockControls(path, block) {
   const isImage = block.type === 'image';
-  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${field('Largeur', `${path}.width`, 'range', { min:25, max:100, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Décalage horizontal', `${path}.offsetX`, 'range', { min:-500, max:500, step:5, defaultValue:0, unit:'px' })}${field('Décalage vertical', `${path}.offsetY`, 'range', { min:-500, max:500, step:5, defaultValue:0, unit:'px' })}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}</div>`;
+  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:100, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Décalage horizontal', `${path}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Décalage vertical', `${path}.offsetY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">Sur téléphone, les colonnes se replacent automatiquement les unes sous les autres.</p></div>`;
   if (isImage) return positioning + choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']]);
   return `${positioning}<div class="form-section"><h3>Texte</h3>${field('Alignement', `${path}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Police', `${path}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${path}.fontSize`, 'range', { min:14, max:96, step:1, defaultValue:block.style === 'lead' ? 48 : 18, unit:'px' })}${field('Couleur du texte', `${path}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${path}.color`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Zone colorée</h3>${field('Fond', `${path}.surface`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur personnalisée', `${path}.background`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${path}.padding`, 'range', { min:0, max:120, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${path}.minHeight`, 'range', { min:0, max:520, step:10, defaultValue:0, unit:'px' })}</div>${choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}`;
 }
@@ -231,7 +257,8 @@ function renderProject(index) {
     ${field('Masquer ce projet', `${base}.hidden`, 'checkbox')}</div>
     ${choices('Présentation de la couverture', `${base}.coverKind`, [['photo','Photo'],['cutout','Détourée']])}
     ${choices('Coins de la couverture', `${base}.coverRadius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-500,max:500,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-500,max:500,step:5,defaultValue:0,unit:'px' })}</div>
+    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}</div>
+    <div class="form-section"><h3>Sur la couverture</h3><p class="form-note">Ajoute librement du texte ou une image par-dessus la couverture. La composition reste responsive.</p></div>${blockControls(`${base}.heroBlocks`)}${contentOutline(`${base}.heroBlocks`, project.heroBlocks || [], 'Éléments sur la couverture')}
     <div class="form-section"><h3>Images du projet (${project.media?.length || 0})</h3><div class="list-editor">${(project.media || []).map((item, mediaIndex) => `<button class="page-button" data-select-path="${base}.media.${mediaIndex}"><span>▧</span><span>${encode(item.caption || item.alt || `Image ${mediaIndex + 1}`)}</span></button>`).join('')}</div><button class="button" data-add-project-image="${index}">+ Ajouter une image</button></div>
     ${contentOutline(`${base}.media`, project.media || [], 'Ordre des images')}${blockControls(`${base}.blocks`)}${contentOutline(`${base}.blocks`, project.blocks || [], 'Ordre des blocs')}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="projects.${index}" data-delta="-1">↑ Monter</button><button class="button" data-move-path="projects.${index}" data-delta="1">↓ Descendre</button></div><button class="button" data-duplicate-project="${index}">Dupliquer le projet</button></div><button class="danger-button" data-delete-project="${index}">Supprimer ce projet</button>`;
 }
@@ -249,14 +276,14 @@ function renderMedia(projectIndex, mediaIndex) {
     ${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
     ${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}</div>
+    <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">Choisis « Un tiers » sur trois images consécutives pour les aligner. Sur téléphone, elles s’empilent automatiquement.</p></div>
     <div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer cette image</button></div>`;
 }
 function renderGalleryItem(index) {
   const base = `site.gallery.items.${index}`; dom.inspectorTitle.textContent = `Galerie · ${index + 1}`;
   dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
     ${choices('Taille', `${base}.size`, [['small','Petite'],['medium','Moyenne'],['large','Grande']])}${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section">${field('Largeur', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-500,max:500,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-500,max:500,step:5,defaultValue:0,unit:'px' })}<div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
+    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range')}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">Trois images réglées sur « Un tiers » occupent une ligne sur ordinateur et s’empilent sur téléphone.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
 }
 function renderBlock(path) {
   const block = getPath(path); if (!block) return renderEmpty(); dom.inspectorTitle.textContent = 'Bloc de contenu';
@@ -302,7 +329,8 @@ function renderPagePanel(pageId) {
   const definition = pageDefinitions.find(item => item.id === pageId); dom.inspectorTitle.textContent = definition?.label || 'Page';
   const heading = pageId === 'notFound' ? 'Page 404' : `Page ${definition?.label || ''}`;
   const base = `site.customBlocks.${pageId}`; const blocks = getPath(base) || [];
-  dom.inspector.innerHTML = `<div class="form-section"><h3>${encode(heading)}</h3><p class="empty-state">Clique directement sur un texte ou une image dans la page pour le modifier.</p></div>${blockControls(base)}${contentOutline(base, blocks, 'Ordre des blocs')}`;
+  const heroBase = `site.customBlocks.${pageId}Hero`; const heroBlocks = getPath(heroBase) || [];
+  dom.inspector.innerHTML = `<div class="form-section"><h3>${encode(heading)}</h3><p class="empty-state">Clique directement sur un texte ou une image dans la page pour le modifier.</p></div><div class="form-section"><h3>En-tête / sur le visuel</h3><p class="form-note">Ces éléments peuvent être placés sur la zone d’en-tête, y compris sur l’image d’accueil.</p></div>${blockControls(heroBase)}${contentOutline(heroBase, heroBlocks, 'Éléments de l’en-tête')}<div class="form-section"><h3>Contenu libre de la page</h3><p class="form-note">Compose des lignes de une, deux ou trois colonnes. Le téléphone les empile automatiquement.</p></div>${blockControls(base)}${contentOutline(base, blocks, 'Ordre des blocs')}`;
 }
 function renderEmpty() { dom.inspectorTitle.textContent = 'Propriétés'; dom.inspector.innerHTML = '<div class="empty-state"><span>✦</span><p>Sélectionne un texte, une image ou un projet dans la prévisualisation.</p></div>'; }
 function renderInspector() {
@@ -315,7 +343,7 @@ function renderInspector() {
   if (!selectedPath) return renderEmpty();
   const parts = pathParts(selectedPath);
   if (parts[0] === 'projects' && typeof parts[1] === 'number' && parts[2] === 'media') return renderMedia(parts[1], parts[3]);
-  if (parts[0] === 'projects' && typeof parts[1] === 'number' && parts[2] === 'blocks') return renderBlock(selectedPath);
+  if (parts[0] === 'projects' && typeof parts[1] === 'number' && ['blocks','heroBlocks'].includes(parts[2])) return renderBlock(selectedPath);
   if (parts[0] === 'projects' && typeof parts[1] === 'number') return ['title','description'].includes(parts[2]) ? renderProjectText(parts[1], parts[2]) : renderProject(parts[1]);
   if (parts.slice(0,3).join('.') === 'site.gallery.items' && typeof parts[3] === 'number') return renderGalleryItem(parts[3]);
   if (parts.slice(0,2).join('.') === 'site.customBlocks') return renderBlock(parts.slice(0,4).join('.'));
@@ -338,9 +366,9 @@ async function handleUpload(file) {
   try {
     setSaveState('Optimisation image…'); const dataUrl = await compressImage(file); pushHistory();
     if (uploadTarget.type === 'path') setPath(uploadTarget.path, dataUrl);
-    if (uploadTarget.type === 'project-media') { const media = data.projects[uploadTarget.index].media ||= []; media.push({ src:dataUrl, alt:'', caption:'', kind:'wide', format:'landscape', align:'center', radius:'soft', width:100 }); selectedPath = `projects.${uploadTarget.index}.media.${media.length-1}`; }
-    if (uploadTarget.type === 'gallery') { data.site.gallery.items.push({ src:dataUrl, alt:'', caption:'', credit:'', category:data.site.gallery.categories[0] || 'Galerie', size:'medium', radius:'soft', width:100 }); selectedPath = `site.gallery.items.${data.site.gallery.items.length-1}`; }
-    if (uploadTarget.type === 'block-image') { const blocks = getPath(uploadTarget.base) || []; blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100 }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
+    if (uploadTarget.type === 'project-media') { const media = data.projects[uploadTarget.index].media ||= []; media.push({ src:dataUrl, alt:'', caption:'', kind:'wide', format:'landscape', align:'center', radius:'soft', width:100, columnSpan:'' }); selectedPath = `projects.${uploadTarget.index}.media.${media.length-1}`; }
+    if (uploadTarget.type === 'gallery') { data.site.gallery.items.push({ src:dataUrl, alt:'', caption:'', credit:'', category:data.site.gallery.categories[0] || 'Galerie', size:'medium', radius:'soft', width:100, columnSpan:'' }); selectedPath = `site.gallery.items.${data.site.gallery.items.length-1}`; }
+    if (uploadTarget.type === 'block-image') { if (!Array.isArray(getPath(uploadTarget.base))) setPath(uploadTarget.base, []); const blocks = getPath(uploadTarget.base); blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100, columnSpan:12 }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
     uploadTarget = null; markChanged(); showToast('Image optimisée et ajoutée');
   } catch (error) { showToast(error.message || 'Impossible de traiter cette image', true); setSaveState('Erreur'); }
 }
@@ -372,7 +400,7 @@ async function publish() {
 }
 
 function showLogin() { dom.boot.hidden = true; dom.studio.hidden = true; dom.login.hidden = false; }
-function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = data.site?.studioVersion || '1.3.3'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
+function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = data.site?.studioVersion || '1.4.0'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
 async function loadPublicData() {
   const [site, projects] = await Promise.all([fetch('../content/site.json',{cache:'no-store'}).then(r=>r.json()), fetch('../content/projects.json',{cache:'no-store'}).then(r=>r.json())]);
   apiBase = site.admin?.apiBase || ''; return { site, projects: projects.projects };
@@ -382,12 +410,12 @@ async function boot() {
     const fragment = new URLSearchParams(location.hash.slice(1));
     if (fragment.has('session')) { sessionToken = fragment.get('session'); sessionStorage.setItem('mayin-session', sessionToken); history.replaceState(null, '', location.pathname + location.search); }
     const publicData = await loadPublicData();
-    if (localMode) { data = publicData; publishedData = clone(publicData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = JSON.parse(draft); setSaveState('Brouillon local · non publié'); } return showStudio(); }
+    if (localMode) { data = publicData; publishedData = clone(publicData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); localStorage.setItem('mayin-studio-draft', JSON.stringify(data)); setSaveState('Brouillon local · non publié'); } return showStudio(); }
     if (!apiBase || apiBase.includes('REMPLACER')) return showLogin();
     const auth = await fetch(`${apiBase}/auth/me`, { headers:authHeaders() }); if (!auth.ok) return showLogin();
     const account = await auth.json(); currentUser = account.user; csrf = account.csrf;
     const response = await fetch(`${apiBase}/api/content`, { headers:authHeaders() }); if (!response.ok) throw new Error('Contenu inaccessible');
-    data = await response.json(); publishedData = clone(data); const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = JSON.parse(draft); setSaveState('Brouillon local · non publié'); }
+    data = await response.json(); publishedData = clone(data); const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); localStorage.setItem('mayin-studio-draft', JSON.stringify(data)); setSaveState('Brouillon local · non publié'); }
     showStudio();
   } catch (error) { console.error(error); showLogin(); showToast('Le service d’administration n’est pas encore disponible', true); }
 }
@@ -408,7 +436,7 @@ $$('[data-viewport]').forEach((button) => button.addEventListener('click', () =>
 dom.pageList.addEventListener('click', (event) => { const button=event.target.closest('[data-page]'); if (!button) return; activePanel=`page:${button.dataset.page}`; selectedPath=''; selectedStyleId=''; navigatePreview(button.dataset.href,button.dataset.page); renderInspector(); if(isCompact())openMobilePanel(''); });
 dom.projectList.addEventListener('click', (event) => { const add=event.target.closest('[data-add-project-image]'); if(add)return startUpload({type:'project-media',index:Number(add.dataset.addProjectImage)}); const media=event.target.closest('[data-project-media-index]'); if(media){const index=Number(media.dataset.projectIndex); const mediaIndex=media.dataset.projectMediaIndex; expandedProjectIndex=index; selectedPath=mediaIndex === 'cover' ? `projects.${index}.cover` : `projects.${index}.media.${mediaIndex}`; selectedStyleId=''; activePanel=''; renderProjectList(); renderInspector(); return;} const row=event.target.closest('[data-project-index]'); if(!row)return; const index=Number(row.dataset.projectIndex); expandedProjectIndex = expandedProjectIndex === index ? null : index; selectedPath=`projects.${index}`; selectedStyleId=''; activePanel=''; navigatePreview(`../project.html?slug=${encodeURIComponent(data.projects[index].slug)}&admin-preview=1`,'projects'); renderProjectList(); renderInspector(); if(isCompact())openMobilePanel('properties'); });
 $$('[data-panel]').forEach((button) => button.addEventListener('click', () => { if (button.dataset.panel === 'dashboard') return openDashboard(); activePanel=button.dataset.panel; selectedPath=''; renderInspector(); revealInspector(); }));
-$('#add-project').addEventListener('click', () => { pushHistory(); const number=data.projects.length+1; data.projects.push({slug:`nouveau-projet-${number}`,title:`Nouveau projet ${number}`,category:'prive',description:'Description du projet à compléter.',cover:'',coverKind:'photo',coverRadius:'soft',layout:'wide',media:[],blocks:[]}); selectedPath=`projects.${data.projects.length-1}`; activePanel=''; markChanged(); });
+$('#add-project').addEventListener('click', () => { pushHistory(); const number=data.projects.length+1; data.projects.push({slug:`nouveau-projet-${number}`,title:`Nouveau projet ${number}`,category:'prive',description:'Description du projet à compléter.',cover:'',coverKind:'photo',coverRadius:'soft',layout:'wide',media:[],heroBlocks:[],blocks:[]}); selectedPath=`projects.${data.projects.length-1}`; activePanel=''; markChanged(); });
 $('#collapse-left').addEventListener('click', () => {
   if (isCompact()) return openMobilePanel('');
   const projects = $('#project-list');
@@ -451,7 +479,7 @@ dom.inspector.addEventListener('click', (event) => {
   const move=event.target.closest('[data-move-path]'); if(move){moveItem(move.dataset.movePath,move.dataset.delta);return;}
   const addMedia=event.target.closest('[data-add-project-image]'); if(addMedia)return startUpload({type:'project-media',index:Number(addMedia.dataset.addProjectImage)});
   if(event.target.closest('[data-add-gallery-image]'))return startUpload({type:'gallery'});
-  const addBlock=event.target.closest('[data-add-block]'); if(addBlock){const base=addBlock.dataset.blockBase;const type=addBlock.dataset.addBlock;if(type==='image')return startUpload({type:'block-image',base});pushHistory();const blocks=getPath(base)||[];const defaults={width:100,align:'left',spacing:36,textAlign:'left',fontFamily:'sans',fontSize:type==='lead'?48:18,textColor:'inherit',surface:'none',padding:0,minHeight:0,radius:'soft'};const block=type==='quote'?{...defaults,type,text:'Une citation à compléter.',fontFamily:'serif'}:type==='divider'?{type}:type==='spacer'?{type,height:80}:{...defaults,type:'text',style:type==='lead'?'lead':'body',text:'Nouveau texte à compléter.'};blocks.push(block);selectedPath=`${base}.${blocks.length-1}`;activePanel='';markChanged();return;}
+  const addBlock=event.target.closest('[data-add-block]'); if(addBlock){const base=addBlock.dataset.blockBase;const type=addBlock.dataset.addBlock;if(type==='image')return startUpload({type:'block-image',base});pushHistory();if(!Array.isArray(getPath(base)))setPath(base,[]);const blocks=getPath(base);const defaults={width:100,columnSpan:12,align:'left',spacing:36,textAlign:'left',fontFamily:'sans',fontSize:type==='lead'?48:18,textColor:'inherit',surface:'none',padding:0,minHeight:0,radius:'soft'};const block=type==='quote'?{...defaults,type,text:'Une citation à compléter.',fontFamily:'serif'}:type==='divider'?{...defaults,type}:type==='spacer'?{...defaults,type,height:80}:{...defaults,type:'text',style:type==='lead'?'lead':'body',text:'Nouveau texte à compléter.'};blocks.push(block);selectedPath=`${base}.${blocks.length-1}`;activePanel='';markChanged();return;}
   const del=event.target.closest('[data-delete-project]'); if(del){pushHistory();data.projects.splice(Number(del.dataset.deleteProject),1);selectedPath='';markChanged();navigatePreview('../projets.html?admin-preview=1','projects');return;}
   const duplicate=event.target.closest('[data-duplicate-project]'); if(duplicate){pushHistory();const index=Number(duplicate.dataset.duplicateProject);const copy=clone(data.projects[index]);copy.title=`${copy.title} — copie`;copy.slug=`${copy.slug}-copie-${Date.now().toString(36)}`;data.projects.splice(index+1,0,copy);selectedPath=`projects.${index+1}`;markChanged();return;}
   const palette=event.target.closest('[data-palette]'); if(palette){mutate('site.design.activePalette',palette.dataset.palette);return;}

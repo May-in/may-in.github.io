@@ -4,7 +4,7 @@ const dom = {
   boot: $('#boot'), login: $('#login'), studio: $('#studio'), loginButton: $('#login-button'),
   frame: $('#preview'), shell: $('#preview-shell'), inspector: $('#inspector'), inspectorTitle: $('#inspector-title'),
   pageList: $('#page-list'), projectList: $('#project-list'), publish: $('#publish'), undo: $('#undo'), redo: $('#redo'),
-  saveState: $('#save-state'), toast: $('#toast'), imageInput: $('#image-input'), previewPublic: $('#preview-public'),
+  saveState: $('#save-state'), toast: $('#toast'), imageInput: $('#image-input'), backupInput: $('#backup-input'), previewPublic: $('#preview-public'),
   discardDraft: $('#discard-draft'),
   studioVersion: $('#studio-version'),
   leftSidebar: $('.sidebar--left'), rightSidebar: $('.sidebar--right'), mobileContent: $('#mobile-content'), mobileProperties: $('#mobile-properties'), mobileDashboard: $('#mobile-dashboard'),
@@ -80,6 +80,34 @@ function discardDraft() {
   if (!publishedData) return;
   if (!confirm('Revenir à la dernière version publiée ? Les modifications de ce brouillon seront retirées de cet appareil.')) return;
   data = clone(publishedData); undoStack = []; redoStack = []; inlineSessionPath = ''; localStorage.removeItem('mayin-studio-draft'); updateHistoryButtons(); renderAllAdmin(); setSaveState('Version publiée'); showToast('Brouillon retiré : la version publiée est restaurée.');
+}
+
+function normalizeBackup(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Ce fichier ne contient pas une sauvegarde May’in valide.');
+  const site = payload.site;
+  const projects = Array.isArray(payload.projects) ? payload.projects : payload.projects?.projects;
+  if (!site || typeof site !== 'object' || Array.isArray(site) || !Array.isArray(projects)) throw new Error('La sauvegarde doit contenir le site et la liste des projets.');
+  return { site, projects };
+}
+
+async function importBackup(file) {
+  try {
+    const restored = normalizeBackup(JSON.parse(await file.text()));
+    if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
+    pushHistory();
+    data = clone(restored);
+    selectedPath = '';
+    selectedStyleId = '';
+    inlineSessionPath = '';
+    localStorage.setItem('mayin-studio-draft', JSON.stringify(data));
+    renderAllAdmin();
+    setSaveState('Sauvegarde restaurée · non publiée');
+    showToast('Sauvegarde restaurée dans le brouillon. Vérifie-la avant de publier.');
+  } catch (error) {
+    showToast(error.message || 'Impossible de lire cette sauvegarde.', true);
+  } finally {
+    dom.backupInput.value = '';
+  }
 }
 
 function sendDraft() {
@@ -255,7 +283,7 @@ function renderGalleryPanel() {
 }
 function renderSettings() {
   dom.inspectorTitle.textContent = 'Réglages du site';
-  dom.inspector.innerHTML = `<div class="form-section"><h3>Identité</h3>${field('Nom du site','site.name')}${field('Créatrice','site.creatorName')}${field('Activités','site.role')}${field('Adresse du site','site.domain','url')}</div>${imageControl('site.socialImage','Image de partage')}<div class="form-section"><h3>Référencement</h3>${field('Titre pour les moteurs de recherche','site.seoTitle')}${field('Description','site.seoDescription','textarea')}</div><div class="form-section"><h3>Libellés globaux</h3>${field('Bouton du menu','site.menuLabel')}${field('Catégorie privée','site.privateLabel')}${field('Catégorie publique','site.publicLabel')}${field('Copyright','site.copyright')}</div><div class="form-section"><h3>Contact</h3>${field('E-mail','site.email','email')}${field('Téléphone','site.phone')}${field('Coordonnées affichées','site.contactDetails','textarea')}</div><div class="form-section"><h3>Sauvegarde</h3><button class="button" data-export>Télécharger une sauvegarde JSON</button></div>`;
+  dom.inspector.innerHTML = `<div class="form-section"><h3>Identité</h3>${field('Nom du site','site.name')}${field('Créatrice','site.creatorName')}${field('Activités','site.role')}${field('Adresse du site','site.domain','url')}</div>${imageControl('site.socialImage','Image de partage')}<div class="form-section"><h3>Référencement</h3>${field('Titre pour les moteurs de recherche','site.seoTitle')}${field('Description','site.seoDescription','textarea')}</div><div class="form-section"><h3>Libellés globaux</h3>${field('Bouton du menu','site.menuLabel')}${field('Catégorie privée','site.privateLabel')}${field('Catégorie publique','site.publicLabel')}${field('Copyright','site.copyright')}</div><div class="form-section"><h3>Contact</h3>${field('E-mail','site.email','email')}${field('Téléphone','site.phone')}${field('Coordonnées affichées','site.contactDetails','textarea')}</div><div class="form-section"><h3>Sauvegarde</h3><p class="form-note">Une restauration crée uniquement un brouillon local. Rien n’est publié automatiquement.</p><button class="button" data-import>Restaurer une sauvegarde JSON</button><button class="button" data-export>Télécharger une sauvegarde JSON</button></div>`;
 }
 function statCard(label, value, note = '') { return `<article class="dashboard-card"><span>${encode(label)}</span><strong>${encode(value)}</strong>${note ? `<small>${encode(note)}</small>` : ''}</article>`; }
 function renderDashboard() {
@@ -431,8 +459,10 @@ dom.inspector.addEventListener('click', (event) => {
   if(event.target.closest('[data-add-navigation]')){pushHistory();data.site.navigation.push({label:'Nouveau lien',href:'index.html',visible:true});markChanged();return;}
   if(event.target.closest('[data-add-social]')){pushHistory();data.site.socialLinks.push({label:'Nouveau lien',url:'https://',visible:true});markChanged();return;}
   if(event.target.closest('[data-add-gallery-category]')){pushHistory();data.site.gallery.categories.push('Nouvelle catégorie');markChanged();return;}
+  if(event.target.closest('[data-import]')){dom.backupInput.click();return;}
   if(event.target.closest('[data-export]')){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);showToast('Sauvegarde téléchargée');}
 });
+dom.backupInput.addEventListener('change', () => { const file = dom.backupInput.files?.[0]; if (file) importBackup(file); });
 let draggedOutlineItem = null;
 dom.inspector.addEventListener('dragstart', (event) => {
   const row = event.target.closest('[data-sort-index]'); const container = event.target.closest('[data-sort-base]'); if (!row || !container) return;

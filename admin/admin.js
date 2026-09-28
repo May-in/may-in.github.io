@@ -1,3 +1,5 @@
+import '../layout-model.js?v=1';
+const STUDIO_VERSION = '1.5.0';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -94,6 +96,12 @@ function upgradeDraftShape(payload, reference = publishedData) {
   if (!payload?.site || !Array.isArray(payload.projects)) return payload;
   const site = payload.site;
   const publicSite = reference?.site || {};
+  // Apply the specifically requested landscape correction to older local drafts too.
+  if (site.studioVersion !== STUDIO_VERSION) {
+    const stand = payload.projects.find(project => project.slug === 'moooi-stand-commercial');
+    const image = stand?.media?.find(item => item.src === 'assets/projects/02-stand-moooi/12-maquette-dessus-alpha.webp');
+    if (image && ['original','portrait'].includes(image.format)) image.format = 'landscape';
+  }
   site.customBlocks ||= {};
   ['home','projects','gallery','about','contact','notFound','projectsHero','galleryHero','aboutHero','contactHero','notFoundHero'].forEach((key) => { site.customBlocks[key] ||= []; });
   if (!Array.isArray(site.customBlocks.homeHero)) site.customBlocks.homeHero = clone(publicSite.customBlocks?.homeHero || []);
@@ -110,7 +118,7 @@ function upgradeDraftShape(payload, reference = publishedData) {
   };
   Object.entries(legacyText).forEach(([key, oldValue]) => { if (site[key] === oldValue && publicSite[key]) site[key] = publicSite[key]; });
   if (publicSite.studioVersion) site.studioVersion = publicSite.studioVersion;
-  return payload;
+  return MayinModel.ensureIds(payload);
 }
 
 async function importBackup(file) {
@@ -154,12 +162,41 @@ function setPreviewMode(mode) {
   previewMode = mode;
   $$('.segmented').forEach((button) => button.classList.toggle('is-active', button.dataset.mode === mode));
   sendPreviewMode();
-  $('#workspace-hint').textContent = mode === 'edit' ? 'Clique sur un élément du site pour le modifier' : 'Navigation active — utilise les liens normalement';
+  $('#workspace-hint').textContent = mode === 'edit' ? 'Composition ordinateur · adaptation automatique sur tablette et téléphone' : 'Navigation active — utilise les liens normalement';
 }
 function navigatePreview(href, pageId) {
   activePage = pageId || activePage; dom.frame.src = href;
   $$('.page-button').forEach((button) => button.classList.toggle('is-active', button.dataset.page === activePage));
 }
+let previewViewport = matchMedia('(max-width:760px)').matches ? 'mobile' : 'desktop';
+let previewLandscape = false;
+let previewSizeFrame = 0;
+function fitPreviewViewport() {
+  previewSizeFrame = 0;
+  const canvas = $('#canvas');
+  if (!canvas.clientWidth || !canvas.clientHeight) return;
+  const padding = getComputedStyle(canvas);
+  const availableWidth = canvas.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight);
+  const availableHeight = canvas.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom);
+  let [width,height] = { desktop:[1440,900], tablet:[820,1180], mobile:[390,844] }[previewViewport];
+  if (previewLandscape && previewViewport !== 'desktop') [width,height] = [height,width];
+  const scale = Math.max(.1,Math.min(1,availableWidth/width,availableHeight/height));
+  dom.shell.style.width = `${width*scale}px`;
+  dom.shell.style.height = `${height*scale}px`;
+  dom.shell.style.minHeight = '0';
+  dom.shell.style.transition = 'none';
+  dom.frame.style.width = `${width}px`;
+  dom.frame.style.height = `${height}px`;
+  dom.frame.style.transformOrigin = 'top left';
+  dom.frame.style.transform = `scale(${scale})`;
+  dom.frame.title = `Aperçu ${previewViewport === 'desktop' ? 'ordinateur' : previewViewport === 'tablet' ? 'tablette' : 'téléphone'} — ${width} × ${height}`;
+  $$('[data-viewport]').forEach(button => button.classList.toggle('is-active',button.dataset.viewport === previewViewport));
+  const rotate = $('#rotate-preview');
+  rotate.disabled = previewViewport === 'desktop';
+  rotate.setAttribute('aria-pressed',String(previewLandscape));
+}
+new ResizeObserver(() => { if (!previewSizeFrame) previewSizeFrame = requestAnimationFrame(fitPreviewViewport); }).observe($('#canvas'));
+$('#rotate-preview').addEventListener('click', () => { previewLandscape = !previewLandscape; fitPreviewViewport(); });
 function isCompact() { return matchMedia('(max-width:760px)').matches; }
 function openMobilePanel(panel = '') {
   dom.leftSidebar.classList.toggle('is-open', panel === 'content');
@@ -179,7 +216,7 @@ function renderPageList() {
 function renderProjectList() {
   dom.projectList.innerHTML = data.projects.map((project, index) => { const cover = project.cover?.startsWith('data:') ? project.cover : `../${project.cover || 'favicon.svg'}`; const open = expandedProjectIndex === index || selectedPath.startsWith(`projects.${index}`); return `<div class="project-tree"><button class="project-row${selectedPath.startsWith(`projects.${index}`) ? ' is-active' : ''}" data-project-index="${index}"><img src="${encode(cover)}" alt="" /><span>${encode(project.title)}</span><small>${open ? '⌄' : '›'}</small></button>${open ? `<div class="project-media-list"><button class="project-media-row" data-project-index="${index}" data-project-media-index="cover"><span>◆</span><span>Couverture</span></button>${(project.media || []).map((item, mediaIndex) => { const source = item.src?.startsWith('data:') ? item.src : `../${item.src || 'favicon.svg'}`; return `<button class="project-media-row" data-project-index="${index}" data-project-media-index="${mediaIndex}"><img src="${encode(source)}" alt="" /><span>${encode(item.caption || item.alt || `Image ${mediaIndex + 1}`)}</span></button>`; }).join('')}<button class="project-media-row project-media-row--add" data-add-project-image="${index}">+ Ajouter une image</button></div>` : ''}</div>`; }).join('');
 }
-function renderAllAdmin() { renderPageList(); renderProjectList(); renderInspector(); sendDraft(); }
+function renderAllAdmin() { MayinModel.ensureIds(data); data.site.studioVersion = STUDIO_VERSION; renderPageList(); renderProjectList(); renderInspector(); sendDraft(); }
 function selectPreviewPath(path, styleId = '') {
   const previousPath = selectedPath;
   const previousProject = pathParts(previousPath)[0] === 'projects' ? pathParts(previousPath)[1] : null;
@@ -194,7 +231,7 @@ function field(label, path, type = 'text', options = {}) {
   if (type === 'textarea') return `<label class="field"><span>${label}</span><textarea data-path="${path}" rows="${options.rows || 4}">${encode(value)}</textarea></label>`;
   if (type === 'select') return `<label class="field"><span>${label}</span><select data-path="${path}">${options.choices.map(([key, text]) => `<option value="${key}" ${String(value) === key ? 'selected' : ''}>${text}</option>`).join('')}</select></label>`;
   if (type === 'checkbox') return `<label class="field field--check"><span><input type="checkbox" data-path="${path}" ${value ? 'checked' : ''} /> ${label}</span></label>`;
-  if (type === 'range') { const unit = options.unit || '%'; const parsed = Number(value); const amount = Number.isFinite(parsed) ? parsed : (options.defaultValue ?? 100); return `<label class="field"><span>${label}</span><div class="range-row"><input type="range" min="${options.min ?? 25}" max="${options.max ?? 100}" step="${options.step ?? 5}" value="${amount}" data-path="${path}" data-unit="${unit}" /><output>${amount}${unit}</output></div></label>`; }
+  if (type === 'range') { const unit = options.unit || '%'; const parsed = value === '' ? NaN : Number(value); const amount = Number.isFinite(parsed) ? parsed : (options.defaultValue ?? 100); return `<label class="field"><span>${label}</span><div class="range-row"><input type="range" min="${options.min ?? 25}" max="${options.max ?? 100}" step="${options.step ?? 5}" value="${amount}" data-path="${path}" data-unit="${unit}" /><output>${amount}${unit}</output></div></label>`; }
   if (type === 'color') { const color = /^#[0-9a-f]{6}$/i.test(value) ? value : (options.defaultValue || '#2a1718'); return `<label class="field"><span>${label}</span><input type="color" data-path="${path}" value="${color}" /></label>`; }
   return `<label class="field"><span>${label}</span><input type="${type}" data-path="${path}" value="${encode(value)}" ${options.placeholder ? `placeholder="${encode(options.placeholder)}"` : ''} /></label>`;
 }
@@ -226,7 +263,7 @@ function contentOutline(basePath, items = [], title = 'Ordre') {
 }
 function styleBlockControls(path, block) {
   const isImage = block.type === 'image';
-  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Décalage horizontal', `${path}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Décalage vertical', `${path}.offsetY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La largeur peut dépasser 100 % sur ordinateur. Sur téléphone, elle revient automatiquement dans l’écran.</p></div>`;
+  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Déplacement horizontal (ordinateur)', `${path}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Déplacement vertical (ordinateur)', `${path}.offsetY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La largeur et les déplacements restent dans la page. Sur tablette et téléphone, les éléments se suivent dans leur ordre de lecture ; tes réglages ordinateur sont conservés.</p></div>`;
   if (isImage) return positioning + choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']]);
   return `${positioning}<div class="form-section"><h3>Texte</h3>${field('Alignement', `${path}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Police', `${path}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${path}.fontSize`, 'range', { min:14, max:96, step:1, defaultValue:block.style === 'lead' ? 48 : 18, unit:'px' })}${field('Couleur du texte', `${path}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${path}.color`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Zone colorée</h3>${field('Fond', `${path}.surface`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur personnalisée', `${path}.background`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${path}.padding`, 'range', { min:0, max:120, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${path}.minHeight`, 'range', { min:0, max:520, step:10, defaultValue:0, unit:'px' })}</div>${choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}`;
 }
@@ -234,7 +271,7 @@ function styleBlockControls(path, block) {
 function elementStyleControls(styleId) {
   if (!styleId) return '';
   const base = `site.elementStyles.${styleId}`;
-  return `<div class="form-section"><h3>Texte</h3>${field('Police', `${base}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${base}.fontSize`, 'range', { min:10, max:160, step:1, defaultValue:18, unit:'px' })}${field('Alignement', `${base}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Couleur', `${base}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${base}.customColor`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Position et zone</h3>${field('Largeur', `${base}.width`, 'range', { min:20, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${base}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Fond', `${base}.background`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur du fond', `${base}.backgroundColor`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${base}.padding`, 'range', { min:0, max:160, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${base}.minHeight`, 'range', { min:0, max:720, step:10, defaultValue:0, unit:'px' })}${field('Arrondi', `${base}.radius`, 'range', { min:0, max:100, step:2, defaultValue:0, unit:'px' })}${field('Masquer cet élément', `${base}.hidden`, 'checkbox')}</div>`;
+  return `<div class="form-section"><h3>Texte</h3>${field('Police', `${base}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${base}.fontSize`, 'range', { min:10, max:160, step:1, defaultValue:18, unit:'px' })}${field('Alignement', `${base}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Couleur', `${base}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${base}.customColor`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Position et zone</h3>${field('Largeur', `${base}.width`, 'range', { min:20, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${base}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${field('Déplacement horizontal (ordinateur)', `${base}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Déplacement vertical (ordinateur)', `${base}.offsetY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Fond', `${base}.background`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur du fond', `${base}.backgroundColor`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${base}.padding`, 'range', { min:0, max:160, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${base}.minHeight`, 'range', { min:0, max:720, step:10, defaultValue:0, unit:'px' })}${field('Arrondi', `${base}.radius`, 'range', { min:0, max:100, step:2, defaultValue:0, unit:'px' })}${field('Masquer cet élément', `${base}.hidden`, 'checkbox')}</div>`;
 }
 function renderSiteField(path, label) {
   const value = getPath(path);
@@ -258,7 +295,7 @@ function renderProject(index) {
     <div class="form-section"><h3>Taille de la carte dans Projets</h3>${field('Largeur du cadre dans la page', `${base}.cardSpan`, 'select', { choices: [['','Composition automatique'],['4','Un tiers'],['6','Moitié'],['8','Deux tiers'],['10','Très grande'],['12','Pleine largeur']] })}${field('Alignement du cadre', `${base}.cardAlign`, 'select', { choices: [['start','Gauche'],['center','Centre'],['end','Droite']] })}<p class="form-note">Ce réglage agrandit réellement le cadre. Il reste automatiquement à la largeur de l’écran sur téléphone.</p></div>
     ${choices('Présentation de la couverture', `${base}.coverKind`, [['photo','Photo'],['cutout','Détourée']])}
     ${choices('Coins de la couverture', `${base}.coverRadius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur de l’image dans le cadre', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">Cette largeur peut aller jusqu’à 200 %. Utilise le réglage précédent pour agrandir toute la carte.</p></div>
+    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur de l’image dans le cadre', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Déplacement horizontal (ordinateur)', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Déplacement vertical (ordinateur)', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">Cette largeur peut aller jusqu’à 200 %. Utilise le réglage précédent pour agrandir toute la carte.</p></div>
     <div class="form-section"><h3>Sur la couverture</h3><p class="form-note">Ajoute librement du texte ou une image par-dessus la couverture. La composition reste responsive.</p></div>${blockControls(`${base}.heroBlocks`)}${contentOutline(`${base}.heroBlocks`, project.heroBlocks || [], 'Éléments sur la couverture')}
     <div class="form-section"><h3>Images du projet (${project.media?.length || 0})</h3><div class="list-editor">${(project.media || []).map((item, mediaIndex) => `<button class="page-button" data-select-path="${base}.media.${mediaIndex}"><span>▧</span><span>${encode(item.caption || item.alt || `Image ${mediaIndex + 1}`)}</span></button>`).join('')}</div><button class="button" data-add-project-image="${index}">+ Ajouter une image</button></div>
     ${contentOutline(`${base}.media`, project.media || [], 'Ordre des images')}${blockControls(`${base}.blocks`)}${contentOutline(`${base}.blocks`, project.blocks || [], 'Ordre des blocs')}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="projects.${index}" data-delta="-1">↑ Monter</button><button class="button" data-move-path="projects.${index}" data-delta="1">↓ Descendre</button></div><button class="button" data-duplicate-project="${index}">Dupliquer le projet</button></div><button class="danger-button" data-delete-project="${index}">Supprimer ce projet</button>`;
@@ -271,20 +308,20 @@ function renderProjectText(index, key) {
 }
 function renderMedia(projectIndex, mediaIndex) {
   const base = `projects.${projectIndex}.media.${mediaIndex}`; const item = getPath(base); if (!item) return renderProject(projectIndex);
-  dom.inspectorTitle.textContent = `Image ${mediaIndex + 1}`;
-  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${field('Description accessible', `${base}.alt`, 'textarea', { rows: 3 })}</div>${selectedStyleId ? `<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Ces réglages concernent uniquement la légende sélectionnée. Elle peut être déplacée, redimensionnée et stylisée comme un texte normal.</p></div>${elementStyleControls(selectedStyleId)}` : '<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Clique directement sur la légende dans l’aperçu pour afficher tous ses réglages de texte et de position.</p></div>'}
+  dom.inspectorTitle.textContent = selectedPath.endsWith('.caption') ? `Légende ${mediaIndex + 1}` : `Image ${mediaIndex + 1}`;
+  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${field('Description accessible', `${base}.alt`, 'textarea', { rows: 3 })}</div>${selectedPath.endsWith('.caption') && selectedStyleId ? `<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Ces réglages concernent uniquement la légende sélectionnée. Elle peut être déplacée, redimensionnée et stylisée comme un texte normal.</p></div>${elementStyleControls(selectedStyleId)}` : '<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Clique directement sur la légende dans l’aperçu pour afficher tous ses réglages de texte et de position.</p></div>'}
     ${choices('Taille', `${base}.kind`, [['wide','Large'],['process','Moyenne'],['detail','Petite'],['cutout','Détourée'],['plan','Plan']])}
     ${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
     ${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">La largeur peut atteindre 200 %. Choisis « Un tiers » sur trois images consécutives pour les aligner ; sur téléphone, elles s’empilent automatiquement.</p></div>
+    <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Déplacement horizontal (ordinateur)', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Déplacement vertical (ordinateur)', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">La largeur peut atteindre 200 %. Choisis « Un tiers » sur trois images consécutives pour les aligner ; sur téléphone, elles s’empilent automatiquement.</p></div>
     <div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer cette image</button></div>`;
 }
 function renderGalleryItem(index) {
   const base = `site.gallery.items.${index}`; dom.inspectorTitle.textContent = `Galerie · ${index + 1}`;
-  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
+  dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
     ${choices('Taille', `${base}.size`, [['small','Petite'],['medium','Moyenne'],['large','Grande']])}${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Décalage horizontal', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Décalage vertical', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">La largeur peut atteindre 200 %. Trois images réglées sur « Un tiers » occupent une ligne sur ordinateur et s’empilent sur téléphone.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
+    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${field('Déplacement horizontal (ordinateur)', `${base}.offsetX`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}${field('Déplacement vertical (ordinateur)', `${base}.offsetY`, 'range', { min:-1200,max:1200,step:5,defaultValue:0,unit:'px' })}<p class="form-note">La largeur peut atteindre 200 %. Trois images réglées sur « Un tiers » occupent une ligne sur ordinateur et s’empilent sur téléphone.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
 }
 function renderBlock(path) {
   const block = getPath(path); if (!block) return renderEmpty(); dom.inspectorTitle.textContent = 'Bloc de contenu';
@@ -292,7 +329,7 @@ function renderBlock(path) {
   if (block.type === 'image') fields = imageControl(`${path}.src`) + `<div class="form-section"><h3>Texte</h3>${field('Légende', `${path}.caption`, 'textarea')}${field('Description accessible', `${path}.alt`, 'textarea')}</div>` + styleBlockControls(path, block);
   else if (block.type === 'spacer') fields = field('Hauteur', `${path}.height`, 'range', { min:20,max:240,step:10,defaultValue:80,unit:'px' });
   else if (block.type !== 'divider') fields = `<div class="form-section"><h3>Contenu</h3>${field('Texte', `${path}.text`, 'textarea', { rows: 6 })}</div>` + styleBlockControls(path, block);
-  dom.inspector.innerHTML = `${block.type === 'divider' ? '' : `<div class="form-section"><h3>${encode(block.type)}</h3>${fields}${field('Masquer temporairement', `${path}.hidden`, 'checkbox')}</div>`}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${path}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${path}" data-delta="1">↓ Après</button></div><button class="button" data-duplicate-path="${path}">Dupliquer ce bloc</button><button class="danger-button" data-remove-path="${path}">Supprimer ce bloc</button></div>`;
+  dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${block.type === 'divider' ? '' : `<div class="form-section"><h3>${encode(block.type)}</h3>${fields}${field('Masquer temporairement', `${path}.hidden`, 'checkbox')}</div>`}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${path}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${path}" data-delta="1">↓ Après</button></div><button class="button" data-duplicate-path="${path}">Dupliquer ce bloc</button><button class="danger-button" data-remove-path="${path}">Supprimer ce bloc</button></div>`;
 }
 function renderDesign() {
   dom.inspectorTitle.textContent = 'Design & palettes'; const design = data.site.design;
@@ -344,7 +381,7 @@ function renderInspector() {
   if (!selectedPath) return renderEmpty();
   const parts = pathParts(selectedPath);
   if (parts[0] === 'projects' && typeof parts[1] === 'number' && parts[2] === 'media') return renderMedia(parts[1], parts[3]);
-  if (parts[0] === 'projects' && typeof parts[1] === 'number' && ['blocks','heroBlocks'].includes(parts[2])) return renderBlock(selectedPath);
+  if (parts[0] === 'projects' && typeof parts[1] === 'number' && ['blocks','heroBlocks'].includes(parts[2])) return renderBlock(parts.slice(0,4).join('.'));
   if (parts[0] === 'projects' && typeof parts[1] === 'number') return ['title','description'].includes(parts[2]) ? renderProjectText(parts[1], parts[2]) : renderProject(parts[1]);
   if (parts.slice(0,3).join('.') === 'site.gallery.items' && typeof parts[3] === 'number') return renderGalleryItem(parts[3]);
   if (parts.slice(0,2).join('.') === 'site.customBlocks') return renderBlock(parts.slice(0,4).join('.'));
@@ -401,7 +438,7 @@ async function publish() {
 }
 
 function showLogin() { dom.boot.hidden = true; dom.studio.hidden = true; dom.login.hidden = false; }
-function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = data.site?.studioVersion || '1.4.2'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
+function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = STUDIO_VERSION; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
 async function loadPublicData() {
   const [site, projects] = await Promise.all([fetch('../content/site.json',{cache:'no-store'}).then(r=>r.json()), fetch('../content/projects.json',{cache:'no-store'}).then(r=>r.json())]);
   apiBase = site.admin?.apiBase || ''; return { site, projects: projects.projects };
@@ -424,6 +461,13 @@ async function boot() {
 addEventListener('message', (event) => {
   if (event.origin !== location.origin || event.source !== dom.frame.contentWindow || !event.data) return;
   if (event.data.type === 'mayin:preview-ready' && data.site) syncPreview();
+  if (event.data.type === 'mayin:style-map' && data.site) {
+    data.site.elementStyles ||= {};
+    for (const [id, style] of Object.entries(event.data.styles || {})) {
+      if (/^text-[a-z0-9]+$/.test(id) && !Object.hasOwn(data.site.elementStyles,id)) data.site.elementStyles[id] = style;
+    }
+    if (/^page-[a-z0-9-]+$/.test(event.data.scope)) { data.site.styleMigrations ||= {}; data.site.styleMigrations[event.data.scope] = true; }
+  }
   if (event.data.type === 'mayin:select') selectPreviewPath(event.data.path, event.data.styleId);
   if (event.data.type === 'mayin:inline') { if (inlineSessionPath !== event.data.path) { pushHistory(); inlineSessionPath = event.data.path; } setPath(event.data.path, event.data.value); const field = [...dom.inspector.querySelectorAll('[data-path]')].find((input) => input.dataset.path === event.data.path); if (field && field !== document.activeElement) field.value = event.data.value; markChanged(false, false, false); }
   if (event.data.type === 'mayin:inline-commit') { if (inlineSessionPath === event.data.path) { const projectIndex = pathParts(event.data.path)[0] === 'projects' ? pathParts(event.data.path)[1] : null; inlineSessionPath = ''; if (typeof projectIndex === 'number') renderProjectList(); } }
@@ -433,7 +477,7 @@ dom.publish.addEventListener('click', publish); dom.undo.addEventListener('click
 dom.discardDraft.addEventListener('click', discardDraft);
 dom.previewPublic.addEventListener('click', () => open(data.site.domain || '../index.html', '_blank', 'noopener'));
 $$('.segmented').forEach((button) => button.addEventListener('click', () => setPreviewMode(button.dataset.mode)));
-$$('[data-viewport]').forEach((button) => button.addEventListener('click', () => { $$('[data-viewport]').forEach(item=>item.classList.toggle('is-active',item===button)); dom.shell.className = `preview-shell preview-shell--${button.dataset.viewport}`; }));
+$$('[data-viewport]').forEach((button) => button.addEventListener('click', () => { previewViewport = button.dataset.viewport; previewLandscape = false; dom.shell.className = `preview-shell preview-shell--${previewViewport}`; fitPreviewViewport(); }));
 dom.pageList.addEventListener('click', (event) => { const button=event.target.closest('[data-page]'); if (!button) return; activePanel=`page:${button.dataset.page}`; selectedPath=''; selectedStyleId=''; navigatePreview(button.dataset.href,button.dataset.page); renderInspector(); if(isCompact())openMobilePanel(''); });
 dom.projectList.addEventListener('click', (event) => { const add=event.target.closest('[data-add-project-image]'); if(add)return startUpload({type:'project-media',index:Number(add.dataset.addProjectImage)}); const media=event.target.closest('[data-project-media-index]'); if(media){const index=Number(media.dataset.projectIndex); const mediaIndex=media.dataset.projectMediaIndex; expandedProjectIndex=index; selectedPath=mediaIndex === 'cover' ? `projects.${index}.cover` : `projects.${index}.media.${mediaIndex}`; selectedStyleId=''; activePanel=''; renderProjectList(); renderInspector(); return;} const row=event.target.closest('[data-project-index]'); if(!row)return; const index=Number(row.dataset.projectIndex); expandedProjectIndex = expandedProjectIndex === index ? null : index; selectedPath=`projects.${index}`; selectedStyleId=''; activePanel=''; navigatePreview(`../project.html?slug=${encodeURIComponent(data.projects[index].slug)}&admin-preview=1`,'projects'); renderProjectList(); renderInspector(); if(isCompact())openMobilePanel('properties'); });
 $$('[data-panel]').forEach((button) => button.addEventListener('click', () => { if (button.dataset.panel === 'dashboard') return openDashboard(); activePanel=button.dataset.panel; selectedPath=''; renderInspector(); revealInspector(); }));

@@ -8,7 +8,7 @@ let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=13"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=14"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -157,7 +157,7 @@ function imageStyle(item = {}) {
   const position = safeToken(item.objectPosition, 'center');
   const offsetX = boundedSetting(item.offsetX, -1200, 1200, 0);
   const offsetY = boundedSetting(item.offsetY, -1200, 1200, 0);
-  const span = [4, 6, 8, 12].includes(Number(item.columnSpan)) ? Number(item.columnSpan) : 12;
+  const span = [4,6,8,12].includes(Number(item.columnSpan)) ? Number(item.columnSpan) : item.kind === 'detail' || item.size === 'small' ? 4 : item.kind === 'process' || item.size === 'medium' ? 6 : 8;
   return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px;--media-span:${span}`;
 }
 function mediaGridClass(item = {}) { return [4, 6, 8, 12].includes(Number(item.columnSpan)) ? ' media-grid--custom' : ''; }
@@ -198,47 +198,122 @@ function paletteValue(style, key, site, customKey = 'customColor') {
   if (key === 'custom') return style[customKey] || '#2a1718';
   return { ink: palette.ink, accent: palette.accent, paper: palette.paper, soft: palette.soft || palette.paper }[key] || '';
 }
-function applyElementStyles(site, captureBase = false) {
-  document.querySelectorAll('[data-edit-inline]').forEach((element, index) => {
-    const styleId = element.dataset.editStyleId || `${page || 'home'}-text-${index}`;
-    element.dataset.editStyleId = styleId;
-    const layoutElement = element.closest('.large-link,.contact-link') || element;
-    if (captureBase || element.dataset.baseHidden === undefined) element.dataset.baseHidden = String(element.hidden);
-    const style = site.elementStyles?.[styleId];
-    ['font-family','font-size','text-align','color','background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'].forEach((property) => element.style.removeProperty(property));
-    if (layoutElement !== element) ['background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'].forEach((property) => layoutElement.style.removeProperty(property));
-    element.hidden = element.dataset.baseHidden === 'true';
-    if (!style) return;
-    const number = (value, min, max) => Number.isFinite(Number(value)) ? Math.max(min, Math.min(max, Number(value))) : null;
-    const fontSize = number(style.fontSize, 10, 160);
-    const width = number(style.width, 20, 200);
-    const padding = number(style.padding, 0, 160);
-    const minHeight = number(style.minHeight, 0, 720);
-    const offsetX = number(style.offsetX, -1200, 1200) || 0;
-    const offsetY = number(style.offsetY, -1200, 1200) || 0;
-    if (Object.hasOwn(style, 'hidden')) element.hidden = Boolean(style.hidden);
-    if (style.fontFamily) element.style.fontFamily = `var(--${safeToken(style.fontFamily, 'sans')})`;
-    if (fontSize !== null) element.style.fontSize = `${fontSize}px`;
-    if (style.textAlign) element.style.textAlign = safeToken(style.textAlign, 'left');
-    if (style.textColor && style.textColor !== 'inherit') element.style.color = paletteValue(style, style.textColor, site);
-    if (style.background && style.background !== 'none') layoutElement.style.background = paletteValue(style, style.background, site, 'backgroundColor');
-    if (width !== null || padding !== null || minHeight !== null || (style.background && style.background !== 'none') || offsetX || offsetY) layoutElement.style.display = layoutElement.matches('.large-link,.contact-link') ? 'inline-flex' : 'block';
-    if (width !== null) { layoutElement.style.width = `${width}%`; layoutElement.style.maxWidth = 'none'; }
-    if (style.align === 'center') layoutElement.style.marginInline = 'auto';
-    if (style.align === 'right') layoutElement.style.marginLeft = 'auto';
-    if (padding !== null) layoutElement.style.padding = `${padding}px`;
-    if (minHeight !== null) layoutElement.style.minHeight = `${minHeight}px`;
-    if (style.radius) layoutElement.style.borderRadius = `${number(style.radius, 0, 100) || 0}px`;
-    if (offsetX || offsetY) layoutElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+const compactLayout = matchMedia('(max-width: 980px)');
+const layoutSettings = new WeakMap();
+let layoutFrame = 0;
+function queueLayout() {
+  if (!layoutFrame) layoutFrame = requestAnimationFrame(fitLayout);
+}
+function bindLayout(element, settings = {}) {
+  if (!element) return;
+  if (!layoutSettings.has(element)) {
+    const base = getComputedStyle(element);
+    element.style.setProperty('--layout-top', base.marginTop);
+    element.style.setProperty('--layout-bottom', base.marginBottom);
+  }
+  element.dataset.layoutItem = '';
+  layoutSettings.set(element, settings);
+  if (settings.width != null) element.style.setProperty('--layout-width', boundedSetting(settings.width, 20, 200, 100) + '%');
+  else element.style.removeProperty('--layout-width');
+  queueLayout();
+}
+function layoutBounds(element) {
+  const canvas = element.parentElement.closest('.projects-grid,.project-gallery,.gallery-grid,.custom-blocks,.project-hero,.home-hero__content,.home-intro,.about-page__content,.gallery-empty,.page-heading,.project-copy,.contact-main,.home-close,.footer,.topbar,main');
+  const viewport = document.documentElement.clientWidth;
+  if (!canvas) return { left:16, right:viewport-16, top:0 };
+  const rect = canvas.getBoundingClientRect();
+  const style = getComputedStyle(canvas);
+  return { left:Math.max(16,rect.left+parseFloat(style.paddingLeft)), right:Math.min(viewport-16,rect.right-parseFloat(style.paddingRight)), top:rect.top+parseFloat(style.paddingTop) };
+}
+function fitLayout() {
+  layoutFrame = 0;
+  const elements = [...document.querySelectorAll('[data-layout-item]')];
+  elements.forEach(element => {
+    element.style.setProperty('--layout-x','0px');
+    element.style.setProperty('--layout-y','0px');
+    const bounds = layoutBounds(element);
+    element.style.setProperty('--layout-max',Math.max(0,bounds.right-bounds.left)+'px');
+  });
+  // Parents first so that nested text is constrained at its final position.
+  elements.forEach(element => {
+    if (!element.getClientRects().length || compactLayout.matches) return;
+    const settings = layoutSettings.get(element) || {};
+    const bounds = layoutBounds(element);
+    const rect = element.getBoundingClientRect();
+    const x = Math.max(bounds.left-rect.left,Math.min(bounds.right-rect.right,boundedSetting(settings.offsetX,-1200,1200,0)));
+    const y = Math.max(bounds.top-rect.top,boundedSetting(settings.offsetY,-1200,1200,0));
+    element.style.setProperty('--layout-x',x+'px');
+    element.style.setProperty('--layout-y',y+'px');
   });
 }
+addEventListener('resize', queueLayout);
+compactLayout.addEventListener('change', () => { applyElementStyles(runtime.site || {}); queueLayout(); });
+document.addEventListener('load', event => { if (event.target.tagName === 'IMG' || event.target.tagName === 'LINK') queueLayout(); }, true);
+document.fonts?.ready.then(queueLayout);
+function bindContentLayout() {
+  document.querySelectorAll('.project-cover-group,.project-hero__visual,.project-media,.gallery-item,.custom-block').forEach(element => {
+    const path = element.dataset.layoutPath || element.dataset.editPath;
+    const item = path?.split('.').reduce((value,part) => value?.[part],runtime);
+    if (item && typeof item === 'object') bindLayout(element,item);
+  });
+}
+
+function applyElementStyles(site, captureBase = false) {
+  const occurrences = new Map(), migrated = {};
+  const projectIndex = page === 'project' ? runtime.projects.findIndex(project => project.slug === new URLSearchParams(location.search).get('slug')) : -1;
+  const scope = projectIndex >= 0 ? 'page-' + MayinModel.styleKey(runtime, `projects.${projectIndex}`, page) : 'page-' + (page || 'home');
+  const useLegacy = !site.styleMigrations?.[scope];
+  document.querySelectorAll('[data-edit-inline]').forEach((element,index) => {
+    const path = element.dataset.editPath;
+    const occurrence = occurrences.get(path) || 0;
+    occurrences.set(path,occurrence+1);
+    const styleId = element.dataset.editStyleId || MayinModel.styleKey(runtime,path,page || 'home',occurrence);
+    element.dataset.editStyleId = styleId;
+    const legacyId = `${page || 'home'}-text-${index}`;
+    const style = site.elementStyles?.[styleId] || (useLegacy ? site.elementStyles?.[legacyId] : undefined);
+    if (style && !site.elementStyles?.[styleId]) {
+      site.elementStyles ||= {};
+      site.elementStyles[styleId] = structuredClone(style);
+      migrated[styleId] = structuredClone(style);
+    }
+    const layoutElement = element.closest('.large-link,.contact-link,.project-title-row') || element;
+    if (captureBase || element.dataset.baseHidden === undefined) element.dataset.baseHidden = String(element.hidden);
+    const properties = ['font-family','font-size','text-align','color','background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'];
+    properties.forEach(property => element.style.removeProperty(property));
+    if (layoutElement !== element) properties.slice(4).forEach(property => layoutElement.style.removeProperty(property));
+    element.hidden = element.dataset.baseHidden === 'true';
+    bindLayout(layoutElement,style || {});
+    if (layoutElement !== element) layoutElement.hidden = element.hidden;
+    if (!style) return;
+    const number = (value,min,max) => value != null && value !== '' && Number.isFinite(Number(value)) ? Math.max(min,Math.min(max,Number(value))) : null;
+    const fontSize = number(style.fontSize,10,160);
+    if (Object.hasOwn(style,'hidden')) element.hidden = Boolean(style.hidden);
+    if (layoutElement !== element) layoutElement.hidden = element.hidden;
+    if (style.fontFamily) element.style.fontFamily = `var(--${safeToken(style.fontFamily,'sans')})`;
+    if (fontSize !== null) element.style.fontSize = compactLayout.matches ? `min(${fontSize}px,${element.matches('h1,h2,h3') ? '12vw' : '8vw'})` : `${fontSize}px`;
+    if (style.textAlign) element.style.textAlign = safeToken(style.textAlign,'left');
+    if (style.textColor && style.textColor !== 'inherit') element.style.color = paletteValue(style,style.textColor,site);
+    if (style.background && style.background !== 'none') layoutElement.style.background = paletteValue(style,style.background,site,'backgroundColor');
+    if (style.width != null || style.offsetX || style.offsetY || style.padding || style.background) layoutElement.style.display = layoutElement.matches('.large-link,.contact-link,.project-title-row') ? 'inline-flex' : 'block';
+    if (style.align === 'center') layoutElement.style.marginInline = 'auto';
+    if (style.align === 'right') layoutElement.style.marginLeft = 'auto';
+    if (style.padding != null) layoutElement.style.padding = `${number(style.padding,0,compactLayout.matches ? 24 : 160) || 0}px`;
+    if (style.minHeight != null && !compactLayout.matches) layoutElement.style.minHeight = `${number(style.minHeight,0,720) || 0}px`;
+    if (style.radius) layoutElement.style.borderRadius = `${number(style.radius,0,100) || 0}px`;
+  });
+  site.styleMigrations ||= {};
+  site.styleMigrations[scope] = true;
+  if (isAdminPreview && useLegacy) window.parent.postMessage({type:'mayin:style-map',styles:migrated,scope},location.origin);
+}
+
 function categoryLabel(category) { return category === 'public' ? runtime.site.publicLabel : runtime.site.privateLabel; }
 
 function projectCard(project, index) {
   const image = project.cover ? `<img src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" loading="lazy" decoding="async" />` : '<span class="project-image__empty">Image à ajouter</span>';
   const cutout = project.coverKind === 'cutout' ? ' project-card--cutout' : '';
   const radius = radiusClass(project.coverRadius || 'soft');
-  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-image" style="${imageStyle(project)}" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><div class="project-meta"><span>${categoryLabel(project.category)}</span><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span></div><div class="project-title-row"><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2><span class="project-arrow" aria-hidden="true">↗</span></div></a>`;
+  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-cover-group" data-layout-path="projects.${index}" style="${imageStyle(project)}"><div class="project-image" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><span class="project-category" data-edit-path="projects.${index}.cover" data-edit-label="Image et catégorie">${categoryLabel(project.category)}</span></div><div class="project-meta"><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span></div><div class="project-title-row"><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2><span class="project-arrow" aria-hidden="true">↗</span></div></a>`;
 }
 
 function renderProjects(projects) {
@@ -270,7 +345,7 @@ function renderProjectPage(projects) {
   if (!projectSchema) { projectSchema = document.createElement('script'); projectSchema.id = 'project-structured-data'; projectSchema.type = 'application/ld+json'; document.head.append(projectSchema); }
   projectSchema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'CreativeWork', name:project.title, description:project.description, url:projectUrl, image:project.cover ? `${runtime.site.domain.replace(/\/$/, '')}/${project.cover.replace(/^\//, '')}` : undefined, creator:{ '@type':'Person', name:runtime.site.creatorName || 'Célia May' }, about:['Architecture intérieure','Design','Scénographie'] });
   const heroRadius = radiusClass(project.coverRadius || 'soft');
-  const hero = project.cover ? `<img class="project-hero__image${project.coverKind === 'cutout' ? ' project-hero__image--cutout' : ''} ${heroRadius}" style="${imageStyle(project)}" src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" fetchpriority="high" data-edit-path="projects.${projectIndex}.cover" data-edit-label="Image de couverture" />` : '<div class="project-hero__empty">Image à ajouter</div>';
+  const hero = project.cover ? `<img class="project-hero__image${project.coverKind === 'cutout' ? ' project-hero__image--cutout' : ''} ${heroRadius}" src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" fetchpriority="high" data-edit-path="projects.${projectIndex}.cover" data-edit-label="Image de couverture" />` : '<div class="project-hero__empty">Image à ajouter</div>';
   const media = (project.media || []).map((item, mediaIndex) => {
     const placement = item.align || ['left', 'right', 'center'][mediaIndex % 3];
     const radius = radiusClass(item.radius || (item.kind === 'cutout' || item.kind === 'plan' ? 'none' : 'soft'));
@@ -278,7 +353,7 @@ function renderProjectPage(projects) {
   }).join('');
   const blocks = renderBlocks(project.blocks || [], `projects.${projectIndex}.blocks`);
   const heroBlocks = renderBlocks(project.heroBlocks || [], `projects.${projectIndex}.heroBlocks`, 'custom-blocks--hero custom-blocks--cover');
-  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1><div class="project-hero__visual">${hero}<div class="hero-block-zone hero-block-zone--cover">${heroBlocks}</div></div></section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
+  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1><div class="project-hero__visual" data-layout-path="projects.${projectIndex}" style="${imageStyle(project)}">${hero}<div class="hero-block-zone hero-block-zone--cover">${heroBlocks}</div></div></section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
 }
 
 function renderGallery(site) {
@@ -291,7 +366,7 @@ function renderGallery(site) {
 function renderBlocks(blocks, basePath, extraClass = '') {
   if (!blocks?.length) return '';
   return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
-    const path = `${basePath}.${index}`;
+    const path = `${basePath}.${blocks.indexOf(block)}`;
     const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}`;
     const style = `${imageStyle(block)};${blockStyle(block)}`;
     if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption></figure>`;
@@ -351,7 +426,7 @@ function renderContactForm(site) {
 }
 
 function renderAll(site, projects) {
-  runtime = { site: normaliseSite(structuredClone(site)), projects: structuredClone(projects || []) };
+  runtime = MayinModel.ensureIds({ site: normaliseSite(structuredClone(site)), projects: structuredClone(projects || []) });
   applyDesign(runtime.site);
   renderNavigation(runtime.site);
   applySiteFields(runtime.site);
@@ -363,12 +438,14 @@ function renderAll(site, projects) {
   ensureHeroBlockZone();
   renderCustomBlocks(runtime.site);
   renderContactForm(runtime.site);
+  bindContentLayout();
   applyElementStyles(runtime.site, true);
   startAnonymousAnalytics(runtime.site);
   prepareAdminPreview();
 }
 
 function updatePreviewValue(path, value) {
+  queueLayout();
   const parts = path.split('.').map((part) => /^\d+$/.test(part) ? Number(part) : part);
   let owner = runtime;
   for (const part of parts.slice(0, -1)) {
@@ -395,15 +472,18 @@ function updatePreviewValue(path, value) {
     const card = document.querySelector(`[data-edit-path="projects.${coverMatch[1]}"]`);
     if (hero) {
       if (coverMatch[2] === 'cover') hero.src = assetSrc(project.cover);
-      hero.style.cssText = imageStyle(project);
+      hero.parentElement.style.cssText = imageStyle(project);
+      bindLayout(hero.parentElement, project);
       hero.classList.toggle('project-hero__image--cutout', project.coverKind === 'cutout');
       hero.classList.remove('radius-none', 'radius-soft', 'radius-top-right', 'radius-diagonal', 'radius-all', 'radius-pill');
       hero.classList.add(radiusClass(project.coverRadius || 'soft'));
     }
     if (card) {
       const image = card.querySelector('.project-image');
+      const group = card.querySelector('.project-cover-group');
+      if (group) { group.style.cssText = imageStyle(project); bindLayout(group, project); }
       if (coverMatch[2] === 'cover' && image?.querySelector('img')) image.querySelector('img').src = assetSrc(project.cover);
-      if (image) image.style.cssText = imageStyle(project);
+      if (image) image.style.removeProperty("width");
       card.style.cssText = projectCardStyle(project);
       card.classList.toggle('project-card--custom-size', [4, 6, 8, 10, 12].includes(Number(project.cardSpan)));
       card.classList.toggle('project-card--cutout', project.coverKind === 'cutout');
@@ -435,6 +515,7 @@ function updatePreviewValue(path, value) {
       const type = item.type === 'image' ? 'image' : item.type === 'quote' ? 'quote' : `text custom-block--${safeToken(item.style, 'body')}`;
       element.className = `custom-block custom-block--${type} ${classes} ${radiusClass(item.radius || 'soft')}${selected}`;
     }
+    bindLayout(element, item);
     return;
   }
   renderAll(runtime.site, runtime.projects);
@@ -505,6 +586,7 @@ if (isAdminPreview) {
   document.addEventListener('input', (event) => {
     const editable = event.target.closest('[data-edit-inline]');
     if (!editable || !previewEditMode) return;
+    queueLayout();
     window.parent.postMessage({ type: 'mayin:inline', path: editable.dataset.editPath, value: editable.textContent }, location.origin);
   });
   document.addEventListener('focusout', (event) => {

@@ -19,3 +19,7 @@ Le référencement vise May’in seul, Célia May, architecture d’intérieur, 
 - Ajouter un mode brouillon, un historique de publications, un suivi SEO dans le Studio et une bibliothèque d’assets : idées jugées intéressantes, mais leur forme et leur priorité restent ouvertes.
 - Les statistiques peuvent distinguer bots et humains lorsqu’une méthode fiable et respectueuse existe ; elles ne doivent pas devenir un dispositif de surveillance individuelle.
 - Une adresse e-mail professionnelle et d’éventuels réseaux sociaux seront ajoutés plus tard ; leurs valeurs ne sont pas encore définies.
+
+## Studio — précisions du 28 septembre 2026
+
+Composition cohérente sur toutes les pages et tous les formats : préserver la liberté ordinateur, adapter les positions et largeurs à l’écran étroit sans éléments hors champ. La catégorie public/privé suit sa couverture ; une flèche de lien suit son texte. Conserver les brouillons, styles et contenus. L’avant-dernière image du stand Moooi (12-maquette-dessus-alpha.webp) est demandée en paysage ; aucun changement d’orientation généralisé. Contrôler les régressions dans une session de test isolée, sans manipuler la session utilisateur.

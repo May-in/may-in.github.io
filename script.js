@@ -8,7 +8,7 @@ let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=12"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=13"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -238,7 +238,7 @@ function projectCard(project, index) {
   const image = project.cover ? `<img src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" loading="lazy" decoding="async" />` : '<span class="project-image__empty">Image à ajouter</span>';
   const cutout = project.coverKind === 'cutout' ? ' project-card--cutout' : '';
   const radius = radiusClass(project.coverRadius || 'soft');
-  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-image" style="${imageStyle(project)}" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><div class="project-meta"><span>${categoryLabel(project.category)}</span><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span><span class="project-arrow" aria-hidden="true">↗</span></div><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2></a>`;
+  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-image" style="${imageStyle(project)}" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><div class="project-meta"><span>${categoryLabel(project.category)}</span><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span></div><div class="project-title-row"><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2><span class="project-arrow" aria-hidden="true">↗</span></div></a>`;
 }
 
 function renderProjects(projects) {

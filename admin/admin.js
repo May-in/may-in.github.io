@@ -272,7 +272,7 @@ function renderProjectText(index, key) {
 function renderMedia(projectIndex, mediaIndex) {
   const base = `projects.${projectIndex}.media.${mediaIndex}`; const item = getPath(base); if (!item) return renderProject(projectIndex);
   dom.inspectorTitle.textContent = `Image ${mediaIndex + 1}`;
-  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${field('Description accessible', `${base}.alt`, 'textarea', { rows: 3 })}</div>
+  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${field('Description accessible', `${base}.alt`, 'textarea', { rows: 3 })}</div>${selectedStyleId ? `<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Ces réglages concernent uniquement la légende sélectionnée. Elle peut être déplacée, redimensionnée et stylisée comme un texte normal.</p></div>${elementStyleControls(selectedStyleId)}` : '<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Clique directement sur la légende dans l’aperçu pour afficher tous ses réglages de texte et de position.</p></div>'}
     ${choices('Taille', `${base}.kind`, [['wide','Large'],['process','Moyenne'],['detail','Petite'],['cutout','Détourée'],['plan','Plan']])}
     ${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
@@ -401,7 +401,7 @@ async function publish() {
 }
 
 function showLogin() { dom.boot.hidden = true; dom.studio.hidden = true; dom.login.hidden = false; }
-function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = data.site?.studioVersion || '1.4.1'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
+function showStudio() { dom.boot.hidden = true; dom.login.hidden = true; dom.studio.hidden = false; dom.accountName.textContent = currentUser?.login || 'Administratrice'; dom.studioVersion.textContent = data.site?.studioVersion || '1.4.2'; if (currentUser?.avatar) { dom.accountAvatar.src = currentUser.avatar; dom.accountAvatar.hidden = false; } loadDashboard().then(() => { if (activePanel === 'dashboard') renderDashboard(); }); renderAllAdmin(); }
 async function loadPublicData() {
   const [site, projects] = await Promise.all([fetch('../content/site.json',{cache:'no-store'}).then(r=>r.json()), fetch('../content/projects.json',{cache:'no-store'}).then(r=>r.json())]);
   apiBase = site.admin?.apiBase || ''; return { site, projects: projects.projects };

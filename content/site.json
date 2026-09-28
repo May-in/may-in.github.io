@@ -1,18 +1,17 @@
 {
   "schemaVersion": 3,
   "name": "May’in",
-  "studioVersion": "1.3.4",
   "creatorName": "Célia May",
   "role": "Architecture intérieure · Design · Scénographie",
-  "domain": "https://may-in.be",
+  "domain": "https://may-in.github.io",
   "seoTitle": "May’in — Architecte d’intérieur à Mons | Célia May",
   "seoDescription": "May’in est le portfolio de Célia May, architecte d’intérieur à Mons, active à Thuin, Charleroi et dans le Hainaut en architecture intérieure, design et scénographie.",
   "socialImage": "assets/social-preview.png",
   "heroImage": "assets/projects/03-patisserie/05-vue-1.webp",
   "intro": "Architecture intérieure · Design · Scénographie",
   "homeAboutLabel": "Intention",
-  "homeAboutTitle": "Des lieux pensés à partir de leurs usages.",
-  "homeAboutText": "Chaque projet commence par le lieu, ses contraintes et l’attention portée à celles et ceux qui vont l’habiter.",
+  "homeAboutTitle": "",
+  "homeAboutText": "Chaque projet naît de ce qui le rend unique : un lieu, une histoire, un usage, une personnalité. Je cherche l’essence propre à chaque projet et le fil conducteur qui lui donnera du sens.\n\nDe ce point de départ naît un univers qui guide les choix, de la matière à la lumière, des formes aux usages.\n\nJe cherche à créer des espaces appropriables, capables d’évoluer avec ceux qui les habitent. Chaque décision participe à une expérience, suscite une émotion et laisse place à une touche d’inattendu.\n",
   "homeProjectsLabel": "Voir les projets",
   "menuLabel": "Menu",
   "filterAllLabel": "Tous",
@@ -24,19 +23,19 @@
   "projectTypeLabel": "Projet",
   "projectSummaryLabel": "En bref",
   "projectAllLabel": "Tous les projets",
-  "projectsEyebrow": "Sélection",
+  "projectsEyebrow": "sélection de projets réalisés au cours de mon bachelier en architecture d'intérieur, explorant différentes échelles, contextes et approches de l'espace.",
   "projectsTitle": "Projets",
   "aboutEyebrow": "À propos",
   "aboutTitle": "À propos de May’in.",
-  "aboutLead": "May’in rassemble les projets d’architecture intérieure, de design et de scénographie de Célia May, basée dans la région de Mons et active à Thuin, Charleroi et dans le Hainaut.",
-  "aboutLeft": "Chaque proposition naît de l’observation des usages, des volumes, de la lumière et des matières.",
-  "aboutRight": "Le portfolio réunit des espaces privés, des lieux publics, du mobilier et des recherches scénographiques.",
+  "aboutLead": "May’in rassemble les projets d’architecture d'intérieur, de design et de scénographie de Célia May, basée dans la région de Mons et active à Thuin, Charleroi et dans le Hainaut.",
+  "aboutLeft": "",
+  "aboutRight": "",
   "aboutContactEyebrow": "Parlons de votre projet",
   "aboutContactLabel": "Me contacter",
   "galleryEyebrow": "Regards",
   "galleryPageTitle": "Galerie",
-  "galleryTitle": "Visites, matières et photographies personnelles.",
-  "galleryText": "Cette page accueillera des images accompagnées d’une courte légende et, si nécessaire, de leur source.",
+  "galleryTitle": "Visites, inspirations et visites personnelles",
+  "galleryText": "Lors de mes voyages et visites, j'ai pu être confrontée à diverses architectures, à de nouvelles sources d'inspiration mais également à la découverte de nouvelles choses. C'est donc ici que je choisi de les partager. ",
   "contactEyebrow": "Contact",
   "contactTitle": "Parlons de votre projet.",
   "email": "",
@@ -48,22 +47,155 @@
   "notFoundTitle": "Cette page n’existe pas.",
   "notFoundLinkLabel": "Retour à l’accueil",
   "navigation": [
-    { "label": "Accueil", "href": "index.html", "visible": true },
-    { "label": "Projets", "href": "projets.html", "visible": true },
-    { "label": "Galerie", "href": "galerie.html", "visible": true },
-    { "label": "À propos", "href": "a-propos.html", "visible": true },
-    { "label": "Contact", "href": "contact.html", "visible": true }
+    {
+      "label": "Accueil",
+      "href": "index.html",
+      "visible": true
+    },
+    {
+      "label": "Projets",
+      "href": "projets.html",
+      "visible": true
+    },
+    {
+      "label": "Galerie",
+      "href": "galerie.html",
+      "visible": true
+    },
+    {
+      "label": "À propos",
+      "href": "a-propos.html",
+      "visible": true
+    },
+    {
+      "label": "Contact",
+      "href": "contact.html",
+      "visible": true
+    }
   ],
   "socialLinks": [],
   "gallery": {
-    "categories": ["Visites", "Inspirations", "Matériaux", "Photographies personnelles"],
+    "categories": [
+      "Visites",
+      "Inspirations",
+      "Matériaux",
+      "Photographies personnelles"
+    ],
     "items": []
   },
   "customBlocks": {
-    "home": [],
+    "home": [
+      {
+        "type": "text",
+        "style": "lead",
+        "text": "Des espaces qui racontent une histoire",
+        "width": 100,
+        "offsetX": 120,
+        "offsetY": -440
+      }
+    ],
     "projects": [],
-    "gallery": [],
-    "about": [],
+    "gallery": [
+      {
+        "type": "image",
+        "src": "assets/uploads/1790584831195-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 60,
+        "offsetX": -305,
+        "spacing": 0,
+        "offsetY": -175,
+        "format": "original"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1790584831195-2-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "pill",
+        "width": 35,
+        "offsetX": 190,
+        "offsetY": -500
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1790584831196-3-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 25,
+        "offsetY": -500,
+        "offsetX": -20
+      }
+    ],
+    "about": [
+      {
+        "type": "image",
+        "src": "assets/uploads/1790584831196-4-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 40,
+        "offsetY": -435,
+        "offsetX": -285,
+        "spacing": 0
+      },
+      {
+        "width": 65,
+        "align": "left",
+        "spacing": 0,
+        "textAlign": "justify",
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "textColor": "inherit",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "soft",
+        "type": "text",
+        "style": "body",
+        "text": "Je m'appelle Célia May et je suis actuellement en première année de master à l'école supérieur des arts de Mons en architecture d'intérieur. \nAussi loin que je m'en souvienne, j'ai toujours été créative et manuelle. Plus jeune, j'aimais inventer des histoires ; j'imaginais alors tout ce qui les composait : les objets, les personnes mais également les espaces. L'imagination a toujours été mon super pouvoir et l'architecture d'intérieur était alors une évidence pour moi.",
+        "offsetY": -445,
+        "offsetX": -160
+      },
+      {
+        "width": 65,
+        "align": "left",
+        "spacing": 0,
+        "textAlign": "justify",
+        "fontFamily": "sans",
+        "fontSize": 14,
+        "textColor": "inherit",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "soft",
+        "type": "text",
+        "style": "body",
+        "text": "Avec le recul, je me rends compte que beaucoup de choses qui m'attiraient depuis toujours se retrouvent dans ce métier : imaginer, transformer des espaces, bricoler, dessiner, me projeter, avoir un impact réel dans ce monde, ... Mes études en architecture d'intérieur ont finalement réuni toutes ces passions en une seule pratique : construire des espaces qui ont un impact réel sur la vie des personnes qui y rentrent. ",
+        "offsetY": -435,
+        "offsetX": -160
+      },
+      {
+        "width": 100,
+        "align": "left",
+        "spacing": 0,
+        "textAlign": "justify",
+        "fontFamily": "sans",
+        "fontSize": 18,
+        "textColor": "inherit",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "soft",
+        "type": "text",
+        "style": "body",
+        "text": "Pour ce qui est de ma façon de concevoir, je cherche principalement à ce que chaque élément du projet trouve sa place dans une réflexion globale. Chaque matière, chaque couleur, chaque forme raconte quelque chose, participe à un usage ou contribue à une atmosphère. Le hasard n'y a pas sa place.\n\nJ'ai la conviction qu'un intérieur ne peut imposer une seule manière de vivre ce pourquoi je laisse une place à l'appropriation et au changement. Intime aujourd'hui, partagé demain, ouvert ou séparé, chaque espace offre des configurations multiples permettant à ses usagers de faire évoluer leur lieu de vie. On peut donc régulièrement retrouver dans mes aménagements des mobiliers qui s'assemblent, se séparent, coulissent, pivotent, ... Le client doit être maitre et créer, lui aussi, son propre aménagement. \n\nAu-delà de sa fonction, un espace est sensible, il a une influence sur nos émotions, notre comportement. Je porte donc une attention particulière à la dimension neurologique des espaces que cela soit pour s'y sentir naturellement bien ou pour susciter de la surprise, de la curiosité, une évasion.\n\nJ'aime les lieux qui racontent une histoire, que chacun interprète différemment. Il y a souvent dans mes projets une petite part d'extraordinaire : un détail inattendu, un passage, une matière, un dispositif qui permet de vivre différemment cet intérieur. Parce qu'un intérieur est plus qu'un cadre, il devient alors une expérience.\n\n",
+        "offsetY": -430,
+        "offsetX": -15
+      }
+    ],
     "contact": [],
     "notFound": []
   },
@@ -71,16 +203,74 @@
     "activePalette": "bordeaux",
     "activeTypography": "editorial",
     "palettes": [
-      { "id": "bordeaux", "name": "Bordeaux actuel", "ink": "#2a1718", "accent": "#7f2c35", "paper": "#f3ede3", "muted": "#8d7c72", "soft": "#d8c9b9" },
-      { "id": "sauge", "name": "Sauge & argile", "ink": "#263029", "accent": "#6f7d68", "paper": "#f2eee4", "muted": "#7d776c", "soft": "#d9d7c7" },
-      { "id": "encre", "name": "Encre & ivoire", "ink": "#151719", "accent": "#485660", "paper": "#f4f1ea", "muted": "#777777", "soft": "#d8d9d6" },
-      { "id": "terre", "name": "Terre cuite", "ink": "#2d201c", "accent": "#a44f38", "paper": "#f4eadc", "muted": "#89756a", "soft": "#dfc5ad" },
-      { "id": "olive", "name": "Olive profonde", "ink": "#20251e", "accent": "#59633e", "paper": "#eee9dc", "muted": "#7b7768", "soft": "#d2d0b9" }
+      {
+        "id": "bordeaux",
+        "name": "Bordeaux actuel",
+        "ink": "#2a1718",
+        "accent": "#7f2c35",
+        "paper": "#f3ede3",
+        "muted": "#8d7c72",
+        "soft": "#d8c9b9"
+      },
+      {
+        "id": "sauge",
+        "name": "Sauge & argile",
+        "ink": "#263029",
+        "accent": "#6f7d68",
+        "paper": "#f2eee4",
+        "muted": "#7d776c",
+        "soft": "#d9d7c7"
+      },
+      {
+        "id": "encre",
+        "name": "Encre & ivoire",
+        "ink": "#151719",
+        "accent": "#485660",
+        "paper": "#f4f1ea",
+        "muted": "#777777",
+        "soft": "#d8d9d6"
+      },
+      {
+        "id": "terre",
+        "name": "Terre cuite",
+        "ink": "#2d201c",
+        "accent": "#a44f38",
+        "paper": "#f4eadc",
+        "muted": "#89756a",
+        "soft": "#dfc5ad"
+      },
+      {
+        "id": "olive",
+        "name": "Olive profonde",
+        "ink": "#20251e",
+        "accent": "#59633e",
+        "paper": "#eee9dc",
+        "muted": "#7b7768",
+        "soft": "#d2d0b9"
+      }
     ],
     "typographies": [
-      { "id": "editorial", "name": "Éditoriale", "serif": "Instrument Serif", "sans": "DM Sans", "mono": "DM Mono" },
-      { "id": "classique", "name": "Classique", "serif": "Cormorant Garamond", "sans": "DM Sans", "mono": "DM Mono" },
-      { "id": "contemporaine", "name": "Contemporaine", "serif": "DM Sans", "sans": "DM Sans", "mono": "DM Mono" }
+      {
+        "id": "editorial",
+        "name": "Éditoriale",
+        "serif": "Instrument Serif",
+        "sans": "DM Sans",
+        "mono": "DM Mono"
+      },
+      {
+        "id": "classique",
+        "name": "Classique",
+        "serif": "Cormorant Garamond",
+        "sans": "DM Sans",
+        "mono": "DM Mono"
+      },
+      {
+        "id": "contemporaine",
+        "name": "Contemporaine",
+        "serif": "DM Sans",
+        "sans": "DM Sans",
+        "mono": "DM Mono"
+      }
     ]
   },
   "admin": {
@@ -88,5 +278,159 @@
     "analyticsEnabled": true,
     "contactFormEnabled": true,
     "repository": "May-in/may-in.github.io"
+  },
+  "elementStyles": {
+    "home-text-11": {
+      "width": 80,
+      "offsetX": -45,
+      "offsetY": 70,
+      "textAlign": "justify"
+    },
+    "home-text-9": {
+      "offsetX": -75,
+      "offsetY": -85
+    },
+    "home-text-8": {
+      "width": 100,
+      "offsetX": 25,
+      "align": "left",
+      "fontSize": 15,
+      "offsetY": -25
+    },
+    "projects-text-13": {
+      "offsetY": -55,
+      "offsetX": 85
+    },
+    "projects-text-12": {
+      "offsetY": 55,
+      "offsetX": -45
+    },
+    "projects-text-15": {
+      "offsetX": 100,
+      "offsetY": -65
+    },
+    "projects-text-14": {
+      "offsetX": -20,
+      "offsetY": 35
+    },
+    "projects-text-17": {
+      "offsetY": -40,
+      "offsetX": 70
+    },
+    "projects-text-16": {
+      "offsetY": 45,
+      "offsetX": -35
+    },
+    "projects-text-19": {
+      "offsetX": 25,
+      "offsetY": -10
+    },
+    "projects-text-18": {
+      "offsetY": 85,
+      "offsetX": -35
+    },
+    "projects-text-20": {
+      "offsetY": 55,
+      "offsetX": -25
+    },
+    "projects-text-21": {
+      "offsetX": 60,
+      "offsetY": -35
+    },
+    "projects-text-23": {
+      "offsetX": 85,
+      "offsetY": -15
+    },
+    "projects-text-22": {
+      "offsetY": 50,
+      "offsetX": -15
+    },
+    "projects-text-25": {
+      "offsetX": 65,
+      "offsetY": -35
+    },
+    "projects-text-24": {
+      "offsetY": 50,
+      "offsetX": -20
+    },
+    "projects-text-26": {
+      "offsetY": 45,
+      "offsetX": -15
+    },
+    "projects-text-27": {
+      "offsetY": -40,
+      "offsetX": 60
+    },
+    "home-text-7": {
+      "offsetY": -15
+    },
+    "projects-text-28": {
+      "offsetY": 50,
+      "offsetX": -25,
+      "width": 75
+    },
+    "projects-text-29": {
+      "offsetX": 105,
+      "offsetY": -35
+    },
+    "projects-text-30": {
+      "offsetY": 50,
+      "offsetX": 0
+    },
+    "projects-text-31": {
+      "offsetY": -45,
+      "offsetX": 60
+    },
+    "project-text-12": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "project-text-18": {
+      "textColor": "accent"
+    },
+    "project-text-17": {
+      "textColor": "accent"
+    },
+    "project-text-20": {
+      "textColor": "accent"
+    },
+    "project-text-26": {
+      "textColor": "accent"
+    },
+    "project-text-25": {
+      "textColor": "accent"
+    },
+    "project-text-22": {
+      "textColor": "accent"
+    },
+    "project-text-15": {
+      "textColor": "accent"
+    },
+    "project-text-16": {
+      "textColor": "accent"
+    },
+    "gallery-text-10": {
+      "width": 95,
+      "offsetY": -55,
+      "offsetX": -50
+    },
+    "gallery-text-9": {
+      "offsetY": -65,
+      "textColor": "accent"
+    },
+    "about-text-11": {
+      "offsetX": 90,
+      "offsetY": 500
+    },
+    "about-text-10": {
+      "fontSize": 16,
+      "width": 100,
+      "offsetY": 500,
+      "hidden": false
+    },
+    "about-text-9": {
+      "offsetX": 500
+    }
   }
 }

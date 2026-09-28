@@ -4,46 +4,54 @@
       "slug": "kot-etudiant",
       "title": "Kot étudiant",
       "category": "prive",
-      "description": "Un logement étudiant compact qui réunit cuisine, coin repas, espace de travail, couchage et salle d’eau.",
+      "description": "Aménagement d'un logement pour un étudiant Erasmus avec son petit hall d'entrée, son espace cuisine, son bureau, sa salle de bain ainsi que le coin repos confortable et ajustable",
       "cover": "assets/projects/01-kot-etudiant/10-maquette-dessus-alpha.webp",
       "layout": "portrait",
       "media": [
         {
+          "src": "assets/projects/01-kot-etudiant/11-inspirations-alpha.webp",
+          "kind": "cutout",
+          "alt": "Références de végétation, de lumière, de lecture et de vie nomade.",
+          "caption": "Un fil conducteur inspiré de la vie des cultures nomades s'appliquant à un étudiant Erasmus qui étudie, s'amuse et s'émerveille de chaque aspect de la vie ",
+          "format": "portrait",
+          "align": "center",
+          "width": 60
+        },
+        {
           "src": "assets/projects/01-kot-etudiant/08-maquette-detail-alpha.webp",
           "kind": "cutout",
           "alt": "Vue depuis l’entrée vers le coin repas et la cuisine.",
-          "caption": "Vue depuis l’entrée vers le coin repas et la cuisine.",
-          "format": "portrait"
+          "caption": "Vue de l'entrée, inspirée de la forme d'une roulotte. Une séparation fonctionnelle toute en douceur entre l'extérieur et une bulle permettant la relaxation, l'étude et l'amusement. ",
+          "format": "portrait",
+          "align": "left"
         },
         {
           "src": "assets/projects/01-kot-etudiant/09-maquette-piece-alpha.webp",
           "kind": "cutout",
           "alt": "Coin détente et recherche de matières textiles.",
-          "caption": "Coin détente et recherche de matières textiles.",
-          "format": "portrait"
-        },
-        {
-          "src": "assets/projects/01-kot-etudiant/11-inspirations-alpha.webp",
-          "kind": "cutout",
-          "alt": "Références de végétation, de lumière, de lecture et de vie nomade.",
-          "caption": "Références d’atmosphère : végétation, lumière, lecture et vie nomade.",
-          "format": "portrait"
+          "caption": "coin détente et convivial avec des tapis, des coussins ainsi que des poufs réalisés par des artisans au crochet. Une mise en avant de l'artisanat des cultures nomades et un moyen de passer du temps entre amis.",
+          "format": "portrait",
+          "align": "right",
+          "radius": "soft"
         },
         {
           "src": "assets/projects/01-kot-etudiant/12-matieres-alpha.webp",
           "kind": "cutout",
           "alt": "Textiles, bois foncé, vert sauge et terre cuite retenus pour le kot.",
-          "caption": "Palette de matières : textiles, bois foncé, vert sauge et terre cuite.",
-          "format": "portrait"
+          "caption": "une palette de matériaux inspirée de la nature et de l'artisanat dans une démarche de récupération et de réappropriation des éléments.",
+          "format": "portrait",
+          "align": "center"
         }
       ],
-      "coverKind": "cutout"
+      "coverKind": "cutout",
+      "width": 100,
+      "offsetY": 75
     },
     {
       "slug": "moooi-stand-commercial",
       "title": "Moooi — stand commercial",
       "category": "public",
-      "description": "Deux niveaux reliés par un escalier courbe. Le mobilier Moooi prend place entre parois végétales, plateforme noire et sol en damier.",
+      "description": "Aménagement d'un stand commercial pour la marque Moooi ouvrant la porte sur  l'extraordinaire. Dans cet univers, le public circule dans un labyrinthe végétal vers un jeu d'échec grandeur nature avant de monter se perdre dans les nuages.",
       "cover": "assets/projects/02-stand-moooi/09-vue-dessus-alpha.webp",
       "layout": "square",
       "media": [
@@ -51,42 +59,35 @@
           "src": "assets/projects/02-stand-moooi/10-vue-laterale-alpha.webp",
           "kind": "cutout",
           "alt": "Vue latérale du stand Moooi",
-          "caption": "Vue latérale du stand",
+          "caption": "Du damier, aux végétaux, en passant par les cascades d'eau, le papier peint, les miroirs ou la moquette moelleuse comme les nuages. Chaque détail est choisi pour mettre en avant les mobiliers ainsi que pour offrir une expérience sensible unique à chaque visiteur.",
           "format": "landscape"
         },
         {
           "src": "assets/projects/02-stand-moooi/08-fauteuil-cutout.png",
           "kind": "cutout",
           "alt": "Fauteuil rouge de la maquette Moooi",
-          "caption": "Prototype de fauteuil",
+          "caption": "Rien n'est mieux que de pouvoir manipuler des prototypes des mobiliers à échelle 1/20. Le fauteuil Hortensia : la star de Moooi",
           "format": "landscape"
         },
         {
           "src": "assets/projects/02-stand-moooi/11-maquette-front-alpha.webp",
           "kind": "cutout",
           "alt": "Maquette : l’escalier relie l’espace d’exposition à la mezzanine.",
-          "caption": "Maquette : l’escalier relie l’espace d’exposition à la mezzanine.",
+          "caption": "Les murs ainsi que les éléments de structure ont été étudiés dans l'optique d'un montage et démontage facile et rapide. Les cloisons réalisés avec des plantes sont dans des pots mobiles permettant des sorties de sécurité ou pour une meilleure fluidité. ",
           "format": "portrait"
         },
         {
           "src": "assets/projects/02-stand-moooi/12-maquette-dessus-alpha.webp",
           "kind": "cutout",
           "alt": "Vue de dessus : organisation des deux niveaux du stand.",
-          "caption": "Vue de dessus : organisation des deux niveaux du stand.",
-          "format": "portrait"
+          "caption": "les 3 \"O\" formant l'identité de la maque Moooi sont ludiquement inscrits dans l'architecture à travers un portail d'entrée, un hublot et un tapis rond. ",
+          "format": "original"
         },
         {
           "src": "assets/projects/02-stand-moooi/13-maquette-detail-alpha.webp",
           "kind": "cutout",
           "alt": "Mobilier miniature et composition du sol en damier.",
-          "caption": "Mobilier miniature et composition du sol en damier.",
-          "format": "portrait"
-        },
-        {
-          "src": "assets/projects/02-stand-moooi/14-maquette-perspective-alpha.webp",
-          "kind": "cutout",
-          "alt": "La paroi végétale accompagne la montée de l’escalier.",
-          "caption": "La paroi végétale accompagne la montée de l’escalier.",
+          "caption": "Une circulation fluide : le mot d'ordre pour un stand commercial pouvant accueillir des milliers de visiteurs. Les différents axes de circulation permettent de répartir les visiteurs et d'offrir à chacun un parcours unique remplis de surprises.",
           "format": "portrait"
         }
       ],
@@ -96,7 +97,7 @@
       "slug": "amenagement-patisserie",
       "title": "Aménagement d’une pâtisserie",
       "category": "public",
-      "description": "Étude d’aménagement intérieur pour une pâtisserie, pensée comme un parcours gourmand et coloré.",
+      "description": "Aménagement d'une pâtisserie avec une partie dégustation et une partie atelier créatif et convivial où chacun façonne sa propre gourmandise.",
       "cover": "assets/projects/03-patisserie/05-vue-1.webp",
       "layout": "wide",
       "media": [
@@ -104,56 +105,57 @@
           "src": "assets/projects/03-patisserie/09-vue-dessus-alpha.webp",
           "kind": "cutout",
           "alt": "Vue aérienne : comptoir, circulation et espaces de dégustation.",
-          "caption": "Vue aérienne : comptoir, circulation et espaces de dégustation.",
-          "format": "landscape"
+          "caption": "Inscrit dans l'ancienne maison du design de Mons, ce projet vise à mettre en avant la création et l'artisanat.",
+          "format": "landscape",
+          "width": 100
         },
         {
           "src": "assets/projects/03-patisserie/10-maquette-charpente-alpha.webp",
           "kind": "cutout",
           "alt": "La charpente apparente au-dessus de l’espace de vente.",
-          "caption": "La charpente apparente au-dessus de l’espace de vente.",
+          "caption": "Le fait main se retrouve dans le concept tout comme dans l'aménagement. Les murs en chaux rendent visible chaque geste créateur, les formes géométriques et les grands axes ont été tracés à la main sur le plan. Le chemin principal est constitué de mosaïques placées aléatoirement par un artisan. La charpente, élément constructif du bâtiment, a été restaurée et mise en avant. ",
           "format": "landscape"
         },
         {
           "src": "assets/projects/03-patisserie/02-photo-maquette-2.webp",
           "kind": "detail",
           "alt": "À hauteur de maquette : structure, comptoir et tables.",
-          "caption": "Vue intérieure de la maquette, sous la charpente apparente.",
+          "caption": "les mosaïques colorées guident le visiteur dans un parcours où ce dernier pourra prendre ses outils, choisir sa table et la positionner où il le souhaite avant de se diriger vers un comptoir remplis d'ingrédients locaux et gourmands.",
           "format": "portrait"
         },
         {
           "src": "assets/projects/03-patisserie/12-maquette-mobilier-alpha.webp",
           "kind": "cutout",
           "alt": "Banquettes géométriques et tables de dégustation.",
-          "caption": "Banquettes géométriques et tables de dégustation.",
+          "caption": "les différentes assises en bois s'adaptent à chaque personne à chaque groupe, à chaque besoin. Travail soigné d'un menuisier, chaque forme est conçue sur mesure pour le bâtiment ",
           "format": "portrait"
         },
         {
           "src": "assets/projects/03-patisserie/13-maquette-volumes-alpha.webp",
           "kind": "cutout",
           "alt": "Étude des assises et du parcours intérieur.",
-          "caption": "Étude des assises et du parcours intérieur.",
+          "caption": "les différents chemins permettent une répartition équilibrée des visiteurs sans troubler le parcours des travailleurs",
           "format": "portrait"
         },
         {
           "src": "assets/projects/03-patisserie/06-vue-2.webp",
           "kind": "wide",
           "alt": "Salle de dégustation baignée de lumière devant les fenêtres cintrées.",
-          "caption": "La salle de dégustation s’organise autour de tables colorées et d’une claustra en bois."
+          "caption": "la partie atelier est totalement ajustable pour accueillir chaque groupe. "
         },
         {
           "src": "assets/projects/03-patisserie/07-vue-3.webp",
           "kind": "detail",
           "alt": "Comptoir de la pâtisserie en bois clair sous des suspensions en forme de goutte.",
-          "caption": "Le comptoir accompagne le parcours jusqu’à la salle de dégustation."
+          "caption": ""
         }
       ]
     },
     {
       "slug": "table-hote-maison-privee",
-      "title": "Table d’hôte en maison privée",
+      "title": "Table d’hôte et maison privée",
       "category": "prive",
-      "description": "Réaménagement d’une maison privée autour de l’accueil, du repas et de la convivialité.",
+      "description": "Réaménagement d’une maison privée en une table d'hôte",
       "cover": "assets/projects/04-table-hote/04-vue-3d-3.webp",
       "layout": "wide",
       "media": [
@@ -161,64 +163,64 @@
           "src": "assets/projects/04-table-hote/12-vue-dessus-alpha.webp",
           "kind": "cutout",
           "alt": "Vue aérienne de la maison et de la table d’hôte.",
-          "caption": "Vue aérienne de la maison et de la table d’hôte.",
+          "caption": "Ce rez-de-chaussée devait accueillir un couple de cuisinier amateurs de yoga dont l'intention était d'accueillir une table d'hôte. ",
           "format": "landscape"
         },
         {
           "src": "assets/projects/04-table-hote/13-maquette-angle-alpha.webp",
           "kind": "cutout",
           "alt": "Maquette : articulation des pièces autour du repas.",
-          "caption": "Maquette : articulation des pièces autour du repas.",
+          "caption": "Maquette 1/50 et fil conducteur en 3 mots : émotion, énergie et déconnexion. La partie yoga est ouverte aux clients ce qui permet ensuite une dégustation conviviale en pleine conscience.",
           "format": "landscape"
         },
         {
           "src": "assets/projects/04-table-hote/14-maquette-dessus-alpha.webp",
           "kind": "cutout",
           "alt": "Étude des volumes et de la cloison courbe.",
-          "caption": "Étude des volumes et de la cloison courbe.",
+          "caption": "Les formes organiques ainsi que le verre dichroïque représentent ce flux d'énergie entrant avec les clients. L'espace dégustation est mis en avant par une bulle symbolisant la déconnexion qui permet de se concentrer sur les émotions ressenties avec chaque bouchée.",
           "format": "portrait"
         },
         {
           "src": "assets/projects/04-table-hote/03-vue-3d-12.webp",
           "kind": "wide",
           "alt": "Cabinet de toilette blanc et gris derrière une porte texturée.",
-          "caption": "Le cabinet de toilette prolonge la palette sobre des espaces privés."
+          "caption": "Les différents matériaux naturels ont été choisis en exploitant toutes leurs propriétés. Les plaques d'onyx aux propriétés translucides sont travaillées avec un rétro éclairage permettant d'éclairer les pièces de manière diffuse"
         },
         {
           "src": "assets/projects/04-table-hote/05-vue-3d-4.webp",
           "kind": "wide",
           "alt": "Table d’hôte ovale bordée d’une banquette et séparée par une cloison courbe rouge.",
-          "caption": "La table ovale et la banquette composent le cœur convivial de la maison."
+          "caption": "La bulle. les parois arrondies coulissent pour ouvrir ou fermer la bulle. Parois en tissu acoustique, elles permettent de réduire l'utilisation des autres sens pour se concentrer sur le gout."
         },
         {
           "src": "assets/projects/04-table-hote/06-vue-3d-5.webp",
           "kind": "detail",
           "alt": "Cuisine en bois clair avec îlot central aux angles arrondis.",
-          "caption": "L’îlot rainuré relie la préparation des repas à l’espace d’accueil."
+          "caption": "L'ilot central et la cuisine ouverte permettent l'échange avec le cuisinier, l'utilisation de l'odorat mais également une circulation fluide des clients et propriétaires."
         },
         {
           "src": "assets/projects/04-table-hote/07-vue-3d-8.webp",
           "kind": "wide",
           "alt": "Chambre avec lit sur estrade, bureau et assises vertes.",
-          "caption": "Une estrade en bois rassemble couchage, rangements et espace de travail."
+          "caption": "Chaque espace est travaillé en tenant compte de la psychologie des couleurs. Le vert intellectuel recouvre donc les zafus de yoga près du bureau"
         },
         {
           "src": "assets/projects/04-table-hote/08-vue-3d-9-nuit.webp",
           "kind": "detail",
           "alt": "Salle de bain nocturne avec vitrage irisé et robinetterie noire.",
-          "caption": "Le vitrage irisé filtre la lumière dans la salle de bain."
+          "caption": "l"
         },
         {
           "src": "assets/projects/04-table-hote/09-vue-3d-nature.webp",
           "kind": "wide",
           "alt": "Pièce de repos ouverte sur le jardin par de larges vitrages colorés.",
-          "caption": "La pièce de repos s’ouvre largement sur le jardin."
+          "caption": "Le sol en liège permet d'amortir les mouvements afin de pratiquer le yoga dans tout l'espace à disposition."
         },
         {
           "src": "assets/projects/04-table-hote/15-plan-alpha.webp",
           "kind": "cutout",
           "alt": "Plan d’aménagement de la maison et de la table d’hôte.",
-          "caption": "Plan d’aménagement : les pièces s’articulent autour de la table d’hôte.",
+          "caption": "Plan d’aménagement : les pièces s’articulent autour de la table d’hôte dans des mouvements fluides. l'espace est ouvert et les coins sont arrondis, la fluidité est un mot d'ordre.",
           "format": "landscape"
         },
         {
@@ -256,58 +258,58 @@
           "src": "assets/projects/05-tiers-lieu/01-20260205-094615.webp",
           "kind": "detail",
           "alt": "Vue de dessus de la maquette circulaire dans son enveloppe complète.",
-          "caption": "Vue de dessus : l’enveloppe de la maquette révèle la succession des espaces circulaires.",
+          "caption": "Inspiré tout droit des comtes et légendes du coin, le projet semble sortir des profondeur du lac pour entrainer le visiteur dans un autre monde",
           "format": "portrait"
         },
         {
           "src": "assets/projects/05-tiers-lieu/12-maquette-volumes-alpha.webp",
           "kind": "cutout",
           "alt": "Maquette en carton : volumes, accès et couverture centrale.",
-          "caption": "Maquette en carton : volumes, accès et couverture centrale.",
+          "caption": "maquette échelle 1/100 du hall d'accueil de la plate taille. ",
           "format": "portrait"
         },
         {
           "src": "assets/projects/05-tiers-lieu/03-3d-casier.webp",
           "kind": "detail",
           "alt": "Vestiaire circulaire sous une canopée végétale suspendue.",
-          "caption": "Le vestiaire réfléchissant s’inscrit sous une canopée végétale."
+          "caption": "les vestiaires démontrent l'utilisation des principes du miroir sans teint."
         },
         {
           "src": "assets/projects/05-tiers-lieu/05-3d-couloir-2.webp",
           "kind": "wide",
           "alt": "Galerie courbe avec alcôves textiles et panneaux acoustiques suspendus.",
-          "caption": "La galerie courbe alterne circulation et alcôves de repos."
+          "caption": "La banquette \"sans fond\" permet de plonger dans les grottes remplies de créatures magiques afin de se reposer après une journée de marche."
         },
         {
           "src": "assets/projects/05-tiers-lieu/06-3d-entree-1.webp",
           "kind": "wide",
           "alt": "Accueil du tiers-lieu sous la coupole centrale.",
-          "caption": "Le comptoir d’accueil guide l’arrivée sous la coupole."
+          "caption": "Le desk d'accueil cache le centre et permet une surprise pour les visiteurs. Les éléments sont imprimés en 3d à base de terre crue beige."
         },
         {
           "src": "assets/projects/05-tiers-lieu/07-3d-filet.webp",
           "kind": "detail",
           "alt": "Alcôves textiles superposées derrière une résille noire.",
-          "caption": "Les alcôves superposées offrent plusieurs façons de s’isoler."
+          "caption": "Le faux plafond en verre d'eau allié avec des projecteurs renvoient un effet de caustique sur le sol. une immersion dans les eaux des lacs"
         },
         {
           "src": "assets/projects/05-tiers-lieu/08-3d-vue-dessus-2.webp",
           "kind": "wide",
           "alt": "Vue transversale du cœur central et de ses différents niveaux.",
-          "caption": "Le cœur central distribue les usages autour de la lumière zénithale."
+          "caption": "Le point central du projet est une banquette ronde d'où sont diffusées les légendes locales. un lieu de mystère et de rencontre au fond du puit de lumière"
         },
         {
           "src": "assets/projects/05-tiers-lieu/13-matieres-alpha.webp",
           "kind": "cutout",
           "alt": "Échantillons, textures et couleurs retenus pour le tiers-lieu.",
-          "caption": "Échantillons, textures et couleurs retenus pour le tiers-lieu.",
+          "caption": "Une palette de matériaux alliant le patrimoine aux découvertes techniques très surprenantes",
           "format": "landscape"
         },
         {
           "src": "assets/projects/05-tiers-lieu/14-plan-alpha.webp",
           "kind": "cutout",
           "alt": "Plan d’aménagement circulaire du tiers-lieu.",
-          "caption": "Plan d’aménagement : les usages rayonnent depuis le cœur central.",
+          "caption": "Chaque ilot des différentes zones se rassemblent vers le centre telles les racines d'un arbre",
           "format": "landscape"
         },
         {
@@ -321,7 +323,7 @@
           "src": "assets/projects/05-tiers-lieu/16-coupes-alpha.webp",
           "kind": "cutout",
           "alt": "Coupes du tiers-lieu et de sa coupole centrale.",
-          "caption": "Coupes : superposition des niveaux sous la coupole existante.",
+          "caption": "le desk d'accueil pensé pour l'usage quotidien des travailleurs",
           "format": "portrait"
         },
         {
@@ -337,58 +339,64 @@
       "slug": "maison-unifamiliale",
       "title": "Maison unifamiliale",
       "category": "prive",
-      "description": "Étude d’une maison unifamiliale et de ses usages quotidiens.",
+      "description": "Aménagement d'une maison unifamiliale comme dernier projet de bachelier. ",
       "cover": "assets/projects/06-maison-unifamiliale/05-3d-salon-cuisine.webp",
       "layout": "wide",
       "media": [
         {
-          "src": "assets/projects/06-maison-unifamiliale/01-3d-bureau.webp",
-          "kind": "detail",
-          "alt": "Bureau en L bordé de rangements toute hauteur et ouvert sur le patio.",
-          "caption": "Le bureau en L profite de deux cadrages sur le patio."
-        },
-        {
-          "src": "assets/projects/06-maison-unifamiliale/02-3d-chambre-lit.webp",
-          "kind": "wide",
-          "alt": "Chambre polyvalente éclairée par une verrière de toiture.",
-          "caption": "La verrière éclaire une chambre organisée entre couchage, étude et rangements."
-        },
-        {
-          "src": "assets/projects/06-maison-unifamiliale/03-3d-chambre.webp",
-          "kind": "detail",
-          "alt": "Bureau central et banquette sous les fenêtres de la chambre.",
-          "caption": "Le bureau central dialogue avec une banquette aménagée sous les fenêtres."
-        },
-        {
           "src": "assets/projects/06-maison-unifamiliale/04-3d-salon-1.webp",
           "kind": "wide",
           "alt": "Cuisine ouverte sur le séjour avec escalier intégré et foyer vitré.",
-          "caption": "La cuisine traverse le rez-de-chaussée et ouvre les vues vers le séjour et la terrasse."
-        },
-        {
-          "src": "assets/projects/06-maison-unifamiliale/06-3dchambre-parentale.webp",
-          "kind": "wide",
-          "alt": "Chambre parentale sous les poutres avec rangements intégrés en sous-pente.",
-          "caption": "Les rangements suivent les sous-pentes de la chambre parentale."
-        },
-        {
-          "src": "assets/projects/06-maison-unifamiliale/07-sdb-2.webp",
-          "kind": "detail",
-          "alt": "Douche vitrée devant un mur en carreaux terre cuite et robinetterie noire.",
-          "caption": "La terre cuite souligne la douche et réchauffe la salle de bain."
+          "caption": "Le patio comme fil conducteur se reflete dans l'ilot central de la cuisine, point de vie d'une famille.",
+          "width": 65,
+          "objectPosition": "left",
+          "align": "left"
         },
         {
           "src": "assets/projects/06-maison-unifamiliale/10-matieres-alpha.webp",
           "kind": "cutout",
           "alt": "Palette de bois clair, terre cuite, textile bouclé et pierre sombre.",
-          "caption": "La palette associe bois clair, terre cuite, textile bouclé et pierre sombre.",
-          "format": "landscape"
+          "caption": "Des matériaux inspirés de l'existante terre cuite",
+          "format": "landscape",
+          "width": 55,
+          "objectPosition": "right",
+          "align": "right"
+        },
+        {
+          "src": "assets/projects/06-maison-unifamiliale/01-3d-bureau.webp",
+          "kind": "detail",
+          "alt": "Bureau en L bordé de rangements toute hauteur et ouvert sur le patio.",
+          "caption": "Les matériaux utilisés selon l'usage et déterminant les points centraux de la maison."
+        },
+        {
+          "src": "assets/projects/06-maison-unifamiliale/02-3d-chambre-lit.webp",
+          "kind": "wide",
+          "alt": "Chambre polyvalente éclairée par une verrière de toiture.",
+          "caption": "U"
+        },
+        {
+          "src": "assets/projects/06-maison-unifamiliale/03-3d-chambre.webp",
+          "kind": "detail",
+          "alt": "Bureau central et banquette sous les fenêtres de la chambre.",
+          "caption": "Deux adolescents, 2 chambres ? une ouverture en panneaux coulissants et acoustiques permettent la création d'un espace de coworking ou de détente fraternelle."
+        },
+        {
+          "src": "assets/projects/06-maison-unifamiliale/06-3dchambre-parentale.webp",
+          "kind": "wide",
+          "alt": "Chambre parentale sous les poutres avec rangements intégrés en sous-pente.",
+          "caption": "Les charmes de la charpente mis en avant dans la chambre parentale dont le point central détemrine la circulation autour."
+        },
+        {
+          "src": "assets/projects/06-maison-unifamiliale/07-sdb-2.webp",
+          "kind": "detail",
+          "alt": "Douche vitrée devant un mur en carreaux terre cuite et robinetterie noire.",
+          "caption": "La terre cuite amène dans les différents espaces, la salle de bain des adolescents et la buanderie communiquant permettent une fluidité dans le circuit quotidien du linge"
         },
         {
           "src": "assets/projects/06-maison-unifamiliale/11-coupe-aa-alpha.webp",
           "kind": "cutout",
           "alt": "Coupe AA de la maison unifamiliale.",
-          "caption": "Coupe AA : relation entre les espaces de vie et les niveaux privés.",
+          "caption": "L'intervention architecturale des différents niveaux sauvegardées et mise en avant dans un espace fonctionnel",
           "format": "landscape"
         },
         {
@@ -398,13 +406,16 @@
           "caption": "Coupe BB : lumière naturelle et continuité verticale de la maison.",
           "format": "landscape"
         }
-      ]
+      ],
+      "offsetY": 70,
+      "offsetX": -70,
+      "objectPosition": "right"
     },
     {
       "slug": "tables-gigognes",
       "title": "Tables gigognes",
       "category": "prive",
-      "description": "Trois tables gigognes en contreplaqué, aux plateaux triangulaires arrondis et aux assemblages apparents.",
+      "description": "Trois tables gigognes en contreplaqué  dont les assemblages se font sans matériel",
       "cover": "assets/projects/07-tables-gigognes/04-tables-alpha.webp",
       "layout": "square",
       "media": [
@@ -412,7 +423,7 @@
           "src": "assets/projects/07-tables-gigognes/05-elements-alpha.webp",
           "kind": "cutout",
           "alt": "Éléments rainurés en contreplaqué pour les pieds des tables",
-          "caption": "Découpe et rainurage des éléments en contreplaqué.",
+          "caption": "Découpe et rainurage effectué à l'aide d'une découpeuse laser. Un assemblage au millimètre près sans besoin de colle",
           "format": "landscape"
         },
         {
@@ -427,9 +438,9 @@
     },
     {
       "slug": "lampe",
-      "title": "Lampe",
+      "title": "Lampe de bureau",
       "category": "prive",
-      "description": "Une lampe à col flexible, associée à un socle rectangulaire perforé.",
+      "description": "Une lampe de bureau répondant aux problématiques de chaque étudiant.",
       "cover": "assets/projects/08-lampe/07-lampe-cutout.png",
       "layout": "portrait",
       "media": [
@@ -437,28 +448,28 @@
           "src": "assets/projects/08-lampe/12-usage-alpha.webp",
           "kind": "cutout",
           "alt": "Essai d’éclairage de l’abat-jour.",
-          "caption": "Essai d’éclairage de l’abat-jour.",
+          "caption": "Du boitier multi prise, au système électrique jusqu'à l'abat jour, cette lampe a entièrement été réalisée à la main.",
           "format": "portrait"
         },
         {
           "src": "assets/projects/08-lampe/08-detail-alpha.webp",
           "kind": "cutout",
           "alt": "La lampe et son socle en usage, avec un téléphone raccordé.",
-          "caption": "La lampe et son socle en usage, avec un téléphone raccordé.",
+          "caption": "Une problématique : le manque de prise. Cette lampe se greffe sur une multi prise assurant un nombre suffisant de prises pour charger tous les appareils nécéssaires",
           "format": "portrait"
         },
         {
           "src": "assets/projects/08-lampe/09-lumiere-alpha.webp",
           "kind": "cutout",
           "alt": "Le col flexible permet d’orienter l’abat-jour.",
-          "caption": "Le col flexible permet d’orienter l’abat-jour.",
+          "caption": "Le col flexible permet une orientation idéale pour éviter les projections d'ombres encombrantes",
           "format": "portrait"
         },
         {
           "src": "assets/projects/08-lampe/10-articulation-alpha.webp",
           "kind": "cutout",
           "alt": "Autre position du col et détail du socle perforé.",
-          "caption": "Autre position du col et détail du socle perforé.",
+          "caption": "La lumière étudiée au lumen près assure un réalisme des couleurs qui ne fatigue pas les yeux",
           "format": "portrait"
         },
         {
@@ -475,7 +486,7 @@
       "slug": "scenographie-minimaliste",
       "title": "Scénographie minimaliste",
       "category": "public",
-      "description": "Une suite d’espaces clairs où la lumière rasante, les claustras en bois et les surfaces texturées structurent le parcours.",
+      "description": "Une chambre d'hôtel conçue pour répondre à la personnalité de quelqu'un.",
       "cover": "assets/projects/09-scenographie-minimaliste/01-scenographie.jpg",
       "layout": "wide",
       "media": [
@@ -483,28 +494,30 @@
           "src": "assets/projects/09-scenographie-minimaliste/02-scenographie.jpg",
           "kind": "wide",
           "alt": "Espace de repos filtré par une haute claustra ondulante en bois.",
-          "caption": "La claustra ondulante filtre la lumière et organise la transition entre deux séquences."
+          "caption": "U"
         },
         {
           "src": "assets/projects/09-scenographie-minimaliste/03-scenographie.jpg",
           "kind": "detail",
           "alt": "Chambre enveloppante avec lit aux formes arrondies et jardin intérieur.",
-          "caption": "Le lit courbe, le bois et le jardin intérieur composent une séquence plus intime."
+          "caption": "Un lit, une bulle, un confort. espace clair et sobre dont chaque détail rappelle un aspect d'une personnalité"
         },
         {
           "src": "assets/projects/09-scenographie-minimaliste/05-volumes-alpha.webp",
           "kind": "cutout",
           "alt": "Vue de dessus des espaces et du mobilier.",
-          "caption": "Vue de dessus des espaces et du mobilier.",
+          "caption": "Chaque forme chaque mobilier a été choisi en fonction des hobby du client. Fan de l'espace sous marin ? un verre d'eau permet une caustique lumineuse. Fan de paillettes ? des fibres optiques créent des étoiles sur les murs.",
           "format": "portrait"
         }
-      ]
+      ],
+      "coverKind": "photo",
+      "width": 75
     },
     {
       "slug": "scenographie-personnelle",
       "title": "Scénographie personnelle",
       "category": "public",
-      "description": "Une recherche d’intérieur expressive qui associe couleur, transparence, mobilier suspendu et volumes sculpturaux.",
+      "description": "Une recherche d'intérieur et de soi même pour une chambre d'hôtel",
       "cover": "assets/projects/10-scenographie-personnelle/05-volumes-alpha.webp",
       "layout": "wide",
       "media": [
@@ -512,22 +525,24 @@
           "src": "assets/projects/10-scenographie-personnelle/02-scenographie.jpg",
           "kind": "wide",
           "alt": "Espace de lecture et bibliothèque suspendue.",
-          "caption": "Espace de lecture et bibliothèque suspendue."
+          "caption": "sélection des gouts et hobby favoris afin de concevoir l'intérieur parfait pour une personne aussi complexe qu'intéressante"
         },
         {
           "src": "assets/projects/10-scenographie-personnelle/03-scenographie.jpg",
           "kind": "detail",
           "alt": "Espace de bain : couleurs, mosaïque et jeux de transparence.",
-          "caption": "Espace de bain : couleurs, mosaïque et jeux de transparence."
+          "caption": "L'espace des douches réalisé avec du verre de mer ramassé sur les plages et assemblés pièce pa rpièce"
         },
         {
           "src": "assets/projects/10-scenographie-personnelle/04-scenographie.jpg",
           "kind": "wide",
           "alt": "Chambre : lit à baldaquin et séparation ajourée.",
-          "caption": "Chambre : lit à baldaquin et séparation ajourée."
+          "caption": "Chaque loisir, chaque envie, chaque intérêt s'incarne dans une chambre d'hôtel entièrement personnalisée"
         }
       ],
-      "coverKind": "cutout"
+      "coverKind": "cutout",
+      "width": 100,
+      "offsetY": -20
     }
   ]
 }

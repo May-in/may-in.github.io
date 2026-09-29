@@ -14,6 +14,8 @@
   <style>
     [hidden]{display:none!important}.mobile-panel-button{display:none;border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--panel);color:#d9cfd2;font-size:10px;cursor:pointer}
     @media(max-width:760px){.mobile-panel-button{display:block}.studio-mode{order:4}.save-state,.studio-topbar>.button--primary{display:none}.sidebar--right{inset:auto 0 0!important;width:100%;max-height:72dvh;border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;transform:translateY(105%);box-shadow:0 -24px 70px rgba(0,0,0,.45);padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none}.sidebar--right.is-open{transform:translateY(0);visibility:visible;pointer-events:auto}.sidebar--right .sidebar__head{border-radius:18px 18px 0 0}body.mobile-properties-open .sidebar--right{transform:translateY(0)!important;visibility:visible!important;pointer-events:auto!important;z-index:100!important}}
+    .draft-warning{position:absolute;z-index:120;top:12px;left:12px;right:12px;max-width:560px;margin:auto;padding:16px;background:#39272a;color:#fff4ed;border:1px solid #e2a59b;border-radius:12px;box-shadow:0 6px 24px #0005;font-size:13px;line-height:1.5;display:grid;gap:10px}
+    .draft-warning .button{white-space:normal;margin:3px 0}
   </style>
 </head>
 <body>
@@ -30,7 +32,7 @@
 
   <div class="studio" id="studio" hidden>
     <header class="studio-topbar">
-      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.5.0</span></small></div></div>
+      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.5.1</span></small></div></div>
       <div class="studio-mode" role="group" aria-label="Mode de la prévisualisation">
         <button class="segmented is-active" data-mode="edit" title="Cliquer sur un élément pour le modifier">✎ Modifier</button>
         <button class="segmented" data-mode="navigate" title="Utiliser les liens du site">↗ Naviguer</button>
@@ -72,6 +74,11 @@
     </aside>
 
     <main class="workspace">
+      <div id="draft-warning" class="draft-warning" role="alert" hidden>
+        <strong>Ton brouillon n’a pas pu être enregistré sur cet appareil.</strong>
+        <span>Le stockage est plein ou bloqué. Garde le Studio ouvert et télécharge une sauvegarde pour protéger tes dernières modifications.</span>
+        <div><button id="export-unsaved" class="button" type="button">Télécharger une sauvegarde</button> <button id="retry-save" class="button" type="button">Réessayer</button></div>
+      </div>
       <div class="workspace__canvas" id="canvas">
         <div class="preview-shell preview-shell--desktop" id="preview-shell">
           <iframe id="preview" title="Prévisualisation du site" src="../index.html?admin-preview=1"></iframe>
@@ -91,6 +98,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden />
   <input id="backup-input" type="file" accept="application/json,.json" hidden />
-  <script src="admin.js?v=16" type="module"></script>
+  <script src="admin.js?v=17" type="module"></script>
 </body>
 </html>

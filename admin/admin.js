@@ -1,5 +1,5 @@
 import '../layout-model.js?v=1';
-const STUDIO_VERSION = '1.5.0';
+const STUDIO_VERSION = '1.5.1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -7,7 +7,7 @@ const dom = {
   frame: $('#preview'), shell: $('#preview-shell'), inspector: $('#inspector'), inspectorTitle: $('#inspector-title'),
   pageList: $('#page-list'), projectList: $('#project-list'), publish: $('#publish'), undo: $('#undo'), redo: $('#redo'),
   saveState: $('#save-state'), toast: $('#toast'), imageInput: $('#image-input'), backupInput: $('#backup-input'), previewPublic: $('#preview-public'),
-  discardDraft: $('#discard-draft'),
+  discardDraft: $('#discard-draft'), draftWarning: $('#draft-warning'),
   studioVersion: $('#studio-version'),
   leftSidebar: $('.sidebar--left'), rightSidebar: $('.sidebar--right'), mobileContent: $('#mobile-content'), mobileProperties: $('#mobile-properties'), mobileDashboard: $('#mobile-dashboard'),
   accountButton: $('#account-button'), accountMenu: $('#account-menu'), accountAvatar: $('#account-avatar'), accountName: $('#account-name')
@@ -39,6 +39,8 @@ let uploadCounter = 0;
 let inlineSessionPath = '';
 let previewMode = 'edit';
 let saveTimer = 0;
+let draftDirty = false;
+let draftRevision = 0;
 let previewPatchFrame = 0;
 const pendingPreviewPatches = new Map();
 let toastTimer = 0;
@@ -68,9 +70,36 @@ function pushHistory() {
   undoStack.push(JSON.stringify(data)); if (undoStack.length > 40) undoStack.shift(); redoStack = []; updateHistoryButtons();
 }
 function updateHistoryButtons() { dom.undo.disabled = undoStack.length === 0; dom.redo.disabled = redoStack.length === 0; }
+function draftSaveFailed() {
+  dom.draftWarning.hidden = false;
+  setSaveState('Brouillon non enregistré');
+}
+function flushDraft() {
+  clearTimeout(saveTimer); saveTimer = 0;
+  if (!draftDirty || !data.site) return true;
+  try {
+    // setItem is atomic: a failed write must leave the preceding draft intact.
+    localStorage.setItem('mayin-studio-draft', JSON.stringify(data));
+    draftDirty = false; dom.draftWarning.hidden = true;
+    setSaveState('Brouillon local · non publié');
+    return true;
+  } catch {
+    draftSaveFailed();
+    return false;
+  }
+}
 function saveDraftSoon() {
+  draftDirty = true; draftRevision++;
   clearTimeout(saveTimer); setSaveState('Modifications…');
-  saveTimer = setTimeout(() => { localStorage.setItem('mayin-studio-draft', JSON.stringify(data)); setSaveState('Brouillon local · non publié'); }, 500);
+  saveTimer = setTimeout(flushDraft, 500);
+}
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;
+  link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  showToast('Sauvegarde téléchargée');
 }
 function markChanged(refreshInspector = true, syncPreview = true, refreshLists = true) {
   saveDraftSoon(); if (syncPreview) sendDraft(); if (refreshLists) renderProjectList(); if (refreshInspector) renderInspector();
@@ -81,7 +110,12 @@ function redo() { if (!redoStack.length) return; undoStack.push(JSON.stringify(d
 function discardDraft() {
   if (!publishedData) return;
   if (!confirm('Revenir à la dernière version publiée ? Les modifications de ce brouillon seront retirées de cet appareil.')) return;
-  data = clone(publishedData); undoStack = []; redoStack = []; inlineSessionPath = ''; localStorage.removeItem('mayin-studio-draft'); updateHistoryButtons(); renderAllAdmin(); setSaveState('Version publiée'); showToast('Brouillon retiré : la version publiée est restaurée.');
+  try { localStorage.removeItem('mayin-studio-draft'); }
+  catch { showToast('Impossible de retirer le brouillon. Son contenu reste inchangé.', true); return; }
+  clearTimeout(saveTimer); saveTimer = 0; draftDirty = false; draftRevision++;
+  dom.draftWarning.hidden = true;
+  data = clone(publishedData); undoStack = []; redoStack = []; inlineSessionPath = '';
+  updateHistoryButtons(); renderAllAdmin(); setSaveState('Version publiée'); showToast('Brouillon retiré : la version publiée est restaurée.');
 }
 
 function normalizeBackup(payload) {
@@ -97,7 +131,8 @@ function upgradeDraftShape(payload, reference = publishedData) {
   const site = payload.site;
   const publicSite = reference?.site || {};
   // Apply the specifically requested landscape correction to older local drafts too.
-  if (site.studioVersion !== STUDIO_VERSION) {
+  const [draftMajor = 0, draftMinor = 0] = String(site.studioVersion || '0.0').split('.').map(Number);
+  if (draftMajor < 1 || (draftMajor === 1 && draftMinor < 5)) {
     const stand = payload.projects.find(project => project.slug === 'moooi-stand-commercial');
     const image = stand?.media?.find(item => item.src === 'assets/projects/02-stand-moooi/12-maquette-dessus-alpha.webp');
     if (image && ['original','portrait'].includes(image.format)) image.format = 'landscape';
@@ -130,10 +165,11 @@ async function importBackup(file) {
     selectedPath = '';
     selectedStyleId = '';
     inlineSessionPath = '';
-    localStorage.setItem('mayin-studio-draft', JSON.stringify(data));
-    renderAllAdmin();
-    setSaveState('Sauvegarde restaurée · non publiée');
-    showToast('Sauvegarde restaurée dans le brouillon. Vérifie-la avant de publier.');
+    renderAllAdmin(); saveDraftSoon();
+    if (flushDraft()) {
+      setSaveState('Sauvegarde restaurée · non publiée');
+      showToast('Sauvegarde restaurée dans le brouillon. Vérifie-la avant de publier.');
+    }
   } catch (error) {
     showToast(error.message || 'Impossible de lire cette sauvegarde.', true);
   } finally {
@@ -426,15 +462,39 @@ function collectPublishData() {
 }
 async function publish() {
   if (localMode) return showToast('Publication désactivée dans la prévisualisation locale', true);
+  if (dom.publish.disabled) return;
   try {
+    // Save the local recovery copy before starting a potentially slow request.
+    flushDraft();
+    const submittedRevision = draftRevision;
     dom.publish.disabled = true; dom.publish.textContent = 'Publication…'; setSaveState('Publication en cours…');
     const payload = collectPublishData();
     const response = await fetch(`${apiBase}/api/publish`, { method:'POST', headers:authHeaders({ 'Content-Type':'application/json', 'X-Mayin-CSRF':csrf }), body:JSON.stringify({ site:payload.site, projects:{ projects:payload.projects }, files:payload.files, message:'Mise à jour depuis le Studio May’in' }) });
-    if (response.status === 401) return showLogin();
+    if (response.status === 401) throw new Error('Session expirée : exporte ton brouillon avant de te reconnecter.');
     const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Publication refusée');
-    data.site = payload.site; data.projects = payload.projects; publishedData = clone(data); localStorage.removeItem('mayin-studio-draft'); undoStack=[]; redoStack=[]; updateHistoryButtons(); setSaveState('Publié'); showToast('Le site est publié. Mise en ligne dans quelques instants.');
-  } catch (error) { setSaveState('Échec'); showToast(error.message || 'Échec de la publication', true); }
-  finally { dom.publish.disabled = false; dom.publish.textContent = 'Publier'; }
+    publishedData = clone({ site:payload.site, projects:payload.projects });
+    if (draftRevision !== submittedRevision) {
+      // The published snapshot is older than the editor. Never replace newer edits.
+      draftDirty = true; flushDraft();
+      showToast('Version envoyée publiée. Tes nouvelles modifications restent dans le brouillon.');
+    } else {
+      clearTimeout(saveTimer); saveTimer = 0;
+      data = clone(publishedData); draftDirty = false;
+      undoStack = []; redoStack = []; updateHistoryButtons();
+      try {
+        localStorage.removeItem('mayin-studio-draft');
+        dom.draftWarning.hidden = true; setSaveState('Publié');
+      } catch {
+        // Keep a recoverable current copy if removing the old local draft is blocked.
+        draftDirty = true; flushDraft();
+      }
+      showToast('Le site est publié. Mise en ligne dans quelques instants.');
+    }
+  } catch (error) {
+    flushDraft();
+    if (!draftDirty) setSaveState('Non publié · brouillon conservé');
+    showToast(error.message || 'Échec de la publication', true);
+  } finally { dom.publish.disabled = false; dom.publish.textContent = 'Publier'; }
 }
 
 function showLogin() { dom.boot.hidden = true; dom.studio.hidden = true; dom.login.hidden = false; }
@@ -448,12 +508,12 @@ async function boot() {
     const fragment = new URLSearchParams(location.hash.slice(1));
     if (fragment.has('session')) { sessionToken = fragment.get('session'); sessionStorage.setItem('mayin-session', sessionToken); history.replaceState(null, '', location.pathname + location.search); }
     const publicData = await loadPublicData();
-    if (localMode) { data = publicData; publishedData = clone(publicData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); localStorage.setItem('mayin-studio-draft', JSON.stringify(data)); setSaveState('Brouillon local · non publié'); } return showStudio(); }
+    if (localMode) { data = publicData; publishedData = clone(publicData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
     if (!apiBase || apiBase.includes('REMPLACER')) return showLogin();
     const auth = await fetch(`${apiBase}/auth/me`, { headers:authHeaders() }); if (!auth.ok) return showLogin();
     const account = await auth.json(); currentUser = account.user; csrf = account.csrf;
     const response = await fetch(`${apiBase}/api/content`, { headers:authHeaders() }); if (!response.ok) throw new Error('Contenu inaccessible');
-    data = await response.json(); publishedData = clone(data); const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); localStorage.setItem('mayin-studio-draft', JSON.stringify(data)); setSaveState('Brouillon local · non publié'); }
+    data = await response.json(); publishedData = clone(data); const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
     showStudio();
   } catch (error) { console.error(error); showLogin(); showToast('Le service d’administration n’est pas encore disponible', true); }
 }
@@ -475,6 +535,25 @@ addEventListener('message', (event) => {
 dom.loginButton.addEventListener('click', () => { if (!apiBase || apiBase.includes('REMPLACER')) return showToast('La connexion sécurisée est en cours de configuration', true); location.href = `${apiBase}/auth/login?returnTo=${encodeURIComponent(location.href)}`; });
 dom.publish.addEventListener('click', publish); dom.undo.addEventListener('click', undo); dom.redo.addEventListener('click', redo);
 dom.discardDraft.addEventListener('click', discardDraft);
+$('#export-unsaved').addEventListener('click', exportBackup);
+$('#retry-save').addEventListener('click', flushDraft);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDraft(); });
+addEventListener('pagehide', flushDraft);
+addEventListener('beforeunload', (event) => {
+  if (!flushDraft()) { event.preventDefault(); event.returnValue = ''; }
+});
+function saveShortcut(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && data.site) {
+    event.preventDefault();
+    // Let pending inline-edit messages reach the parent before saving.
+    setTimeout(flushDraft, 0);
+  }
+}
+document.addEventListener('keydown', saveShortcut);
+dom.frame.addEventListener('load', () => {
+  // The preview stays same-origin. External navigation must not break the Studio.
+  try { dom.frame.contentDocument?.addEventListener('keydown', saveShortcut); } catch {}
+});
 dom.previewPublic.addEventListener('click', () => open(data.site.domain || '../index.html', '_blank', 'noopener'));
 $$('.segmented').forEach((button) => button.addEventListener('click', () => setPreviewMode(button.dataset.mode)));
 $$('[data-viewport]').forEach((button) => button.addEventListener('click', () => { previewViewport = button.dataset.viewport; previewLandscape = false; dom.shell.className = `preview-shell preview-shell--${previewViewport}`; fitPreviewViewport(); }));
@@ -533,7 +612,7 @@ dom.inspector.addEventListener('click', (event) => {
   if(event.target.closest('[data-add-social]')){pushHistory();data.site.socialLinks.push({label:'Nouveau lien',url:'https://',visible:true});markChanged();return;}
   if(event.target.closest('[data-add-gallery-category]')){pushHistory();data.site.gallery.categories.push('Nouvelle catégorie');markChanged();return;}
   if(event.target.closest('[data-import]')){dom.backupInput.click();return;}
-  if(event.target.closest('[data-export]')){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);showToast('Sauvegarde téléchargée');}
+  if(event.target.closest('[data-export]')) exportBackup();
 });
 dom.backupInput.addEventListener('change', () => { const file = dom.backupInput.files?.[0]; if (file) importBackup(file); });
 let draggedOutlineItem = null;

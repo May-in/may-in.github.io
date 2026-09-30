@@ -20,6 +20,12 @@ function upsertMeta(attribute, key, content) {
   element.setAttribute('content', content || '');
 }
 
+function setCanonical(url) {
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.append(link); }
+  link.href = url;
+}
+
 addEventListener('scroll', () => topbar?.classList.toggle('is-scrolled', scrollY > 30), { passive: true });
 menuToggle?.addEventListener('click', () => { const isOpen = navigation.classList.toggle('is-open'); menuToggle.setAttribute('aria-expanded', String(isOpen)); menuToggle.lastChild.textContent = isOpen ? ' −' : ' +'; });
 navigation?.addEventListener('click', (event) => { if (!event.target.closest('a')) return; navigation.classList.remove('is-open'); menuToggle?.setAttribute('aria-expanded', 'false'); if (menuToggle) menuToggle.lastChild.textContent = ' +'; });
@@ -84,20 +90,28 @@ function renderNavigation(site) {
 function applySiteFields(site) {
   if (site.name) document.title = document.title.replace(/Célia|Celiarchi|May’in/g, site.name);
   if (site.seoTitle && page === 'home') document.title = site.seoTitle;
-  if (site.seoDescription) document.querySelector('meta[name="description"]')?.setAttribute('content', site.seoDescription);
-  if (site.domain) {
-    const pagePath = location.pathname.split('/').pop() || '';
-    const projectSlug = page === 'project' ? new URLSearchParams(location.search).get('slug') : '';
-    const query = projectSlug ? `?slug=${encodeURIComponent(projectSlug)}` : '';
-    const canonicalUrl = `${site.domain.replace(/\/$/, '')}/${pagePath}${query}`;
-    document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonicalUrl);
+  if (site.seoDescription && page === 'home') upsertMeta('name', 'description', site.seoDescription);
+  // Projects get a canonical only after their slug has resolved. The generic
+  // template must never describe every project as a duplicate of the listing.
+  if (site.domain && page !== 'project' && page !== 'notFound') {
+    const pagePath = page === 'home' ? '' : location.pathname.split('/').pop();
+    const canonicalUrl = `${site.domain.replace(/\/$/, '')}/${pagePath}`;
+    setCanonical(canonicalUrl);
     upsertMeta('property', 'og:url', canonicalUrl);
   }
   upsertMeta('name', 'author', site.creatorName || 'Célia May');
+  upsertMeta('property', 'og:site_name', site.name);
+  upsertMeta('property', 'og:title', document.title);
+  upsertMeta('name', 'twitter:title', document.title);
+  const description = document.querySelector('meta[name="description"]')?.content;
+  if (description) {
+    upsertMeta('property', 'og:description', description);
+    upsertMeta('name', 'twitter:description', description);
+  }
   if (site.socialImage) {
-    const socialUrl = `${site.domain.replace(/\/$/, '')}/${site.socialImage.replace(/^\//, '')}`;
-    document.querySelector('meta[property="og:image"]')?.setAttribute('content', socialUrl);
-    document.querySelector('meta[name="twitter:image"]')?.setAttribute('content', socialUrl);
+    const socialUrl = new URL(site.socialImage, (site.domain || location.origin).replace(/\/$/, '') + '/').href;
+    upsertMeta('property', 'og:image', socialUrl);
+    upsertMeta('name', 'twitter:image', socialUrl);
   }
   document.querySelectorAll('[data-site]').forEach((element) => {
     const key = element.dataset.site;
@@ -330,17 +344,34 @@ function renderProjectPage(projects) {
   const slug = new URLSearchParams(location.search).get('slug');
   const projectIndex = projects.findIndex((item) => item.slug === slug);
   const project = projects[projectIndex];
-  if (!project) { content.innerHTML = '<section class="project-copy"><p class="eyebrow">Projet introuvable</p><div><p class="lead">Ce projet n’existe pas encore.</p><p><a href="projets.html">Retour aux projets</a></p></div></section>'; return; }
+  if (!project) {
+    document.title = `Projet introuvable — ${runtime.site.name}`;
+    // A static host returns 200 for this template even for an unknown slug.
+    // Only add noindex once the content has loaded and absence is confirmed.
+    upsertMeta('name', 'robots', 'noindex,follow');
+    document.querySelector('link[rel="canonical"]')?.remove();
+    document.querySelector('#project-structured-data')?.remove();
+    content.innerHTML = '<section class="project-copy"><p class="eyebrow">Projet introuvable</p><div><p class="lead">Ce projet n’existe pas encore.</p><p><a href="projets.html">Retour aux projets</a></p></div></section>';
+    return;
+  }
+  upsertMeta('name', 'robots', 'index,follow,max-image-preview:large');
   content.className = `project-layout project-layout--${safeToken(project.layout, 'wide')}`;
   document.title = `${project.title} — ${runtime.site.name}`;
   const projectUrl = `${runtime.site.domain.replace(/\/$/, '')}/project.html?slug=${encodeURIComponent(project.slug)}`;
-  document.querySelector('link[rel="canonical"]')?.setAttribute('href', projectUrl);
+  setCanonical(projectUrl);
   upsertMeta('name', 'description', `${project.title} — ${project.description}`);
   upsertMeta('property', 'og:type', 'article');
   upsertMeta('property', 'og:title', `${project.title} — ${runtime.site.name}`);
   upsertMeta('property', 'og:description', project.description);
   upsertMeta('property', 'og:url', projectUrl);
-  if (project.cover) upsertMeta('property', 'og:image', `${runtime.site.domain.replace(/\/$/, '')}/${project.cover.replace(/^\//, '')}`);
+  upsertMeta('name', 'twitter:card', 'summary_large_image');
+  upsertMeta('name', 'twitter:title', document.title);
+  upsertMeta('name', 'twitter:description', project.description);
+  if (project.cover) {
+    const coverUrl = new URL(project.cover, runtime.site.domain.replace(/\/$/, '') + '/').href;
+    upsertMeta('property', 'og:image', coverUrl);
+    upsertMeta('name', 'twitter:image', coverUrl);
+  }
   let projectSchema = document.querySelector('#project-structured-data');
   if (!projectSchema) { projectSchema = document.createElement('script'); projectSchema.id = 'project-structured-data'; projectSchema.type = 'application/ld+json'; document.head.append(projectSchema); }
   projectSchema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'CreativeWork', name:project.title, description:project.description, url:projectUrl, image:project.cover ? `${runtime.site.domain.replace(/\/$/, '')}/${project.cover.replace(/^\//, '')}` : undefined, creator:{ '@type':'Person', name:runtime.site.creatorName || 'Célia May' }, about:['Architecture intérieure','Design','Scénographie'] });

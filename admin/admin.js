@@ -1,5 +1,5 @@
 import '../layout-model.js?v=1';
-const STUDIO_VERSION = '1.5.2';
+const STUDIO_VERSION = '1.5.3';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {

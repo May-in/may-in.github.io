@@ -27,8 +27,44 @@ function setCanonical(url) {
 }
 
 addEventListener('scroll', () => topbar?.classList.toggle('is-scrolled', scrollY > 30), { passive: true });
-menuToggle?.addEventListener('click', () => { const isOpen = navigation.classList.toggle('is-open'); menuToggle.setAttribute('aria-expanded', String(isOpen)); menuToggle.lastChild.textContent = isOpen ? ' −' : ' +'; });
-navigation?.addEventListener('click', (event) => { if (!event.target.closest('a')) return; navigation.classList.remove('is-open'); menuToggle?.setAttribute('aria-expanded', 'false'); if (menuToggle) menuToggle.lastChild.textContent = ' +'; });
+const mobileNavigation = matchMedia('(max-width:760px)');
+let lastNavigationFocus = null;
+function setMenuOpen(open, restoreFocus = false) {
+  if (!navigation || !menuToggle) return;
+  navigation.classList.toggle('is-open', open);
+  menuToggle.setAttribute('aria-expanded', String(open));
+  menuToggle.lastChild.textContent = open ? ' −' : ' +';
+  if (restoreFocus) menuToggle.focus({ preventScroll:true });
+}
+menuToggle?.addEventListener('click', () => setMenuOpen(!navigation.classList.contains('is-open')));
+navigation?.addEventListener('click', (event) => {
+  // Selecting editable navigation text in the Studio must not close the panel.
+  if (event.defaultPrevented || !event.target.closest('a')) return;
+  setMenuOpen(false);
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && mobileNavigation.matches && navigation?.classList.contains('is-open')) {
+    event.preventDefault(); setMenuOpen(false, true);
+  }
+});
+document.addEventListener('pointerdown', (event) => {
+  if (mobileNavigation.matches && navigation?.classList.contains('is-open') &&
+      !navigation.contains(event.target) && !menuToggle.contains(event.target)) {
+    setMenuOpen(false, navigation.contains(document.activeElement));
+  }
+});
+document.addEventListener('focusin', (event) => {
+  lastNavigationFocus = navigation?.contains(event.target) || event.target === menuToggle ? event.target : null;
+  if (mobileNavigation.matches && navigation?.classList.contains('is-open') &&
+      !navigation.contains(event.target) && !menuToggle.contains(event.target)) setMenuOpen(false);
+});
+mobileNavigation.addEventListener('change', () => {
+  if (!navigation || !menuToggle) return;
+  // CSS may hide the focused link before the media-query change event runs.
+  const focus = document.activeElement === document.body ? lastNavigationFocus : document.activeElement;
+  setMenuOpen(false, mobileNavigation.matches && navigation.contains(focus));
+  if (!mobileNavigation.matches && focus === menuToggle) navigation.querySelector('a')?.focus({ preventScroll:true });
+});
 
 function normaliseSite(site) {
   const defaults = {

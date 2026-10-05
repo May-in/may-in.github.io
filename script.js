@@ -8,7 +8,7 @@ let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=14"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=15"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -255,7 +255,7 @@ let layoutFrame = 0;
 function queueLayout() {
   if (!layoutFrame) layoutFrame = requestAnimationFrame(fitLayout);
 }
-function bindLayout(element, settings = {}) {
+function bindLayout(element, settings = {}, kind = 'media') {
   if (!element) return;
   if (!layoutSettings.has(element)) {
     const base = getComputedStyle(element);
@@ -263,9 +263,11 @@ function bindLayout(element, settings = {}) {
     element.style.setProperty('--layout-bottom', base.marginBottom);
   }
   element.dataset.layoutItem = '';
+  element.dataset.layoutKind = kind;
   layoutSettings.set(element, settings);
   if (settings.width != null) element.style.setProperty('--layout-width', boundedSetting(settings.width, 20, 200, 100) + '%');
   else element.style.removeProperty('--layout-width');
+  element.style.setProperty('--layout-flow-y', boundedSetting(settings.offsetY, -1200, 1200, 0) + 'px');
   queueLayout();
 }
 function layoutBounds(element) {
@@ -279,6 +281,7 @@ function layoutBounds(element) {
 function fitLayout() {
   layoutFrame = 0;
   const elements = [...document.querySelectorAll('[data-layout-item]')];
+  const pageHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
   elements.forEach(element => {
     element.style.setProperty('--layout-x','0px');
     element.style.setProperty('--layout-y','0px');
@@ -291,8 +294,12 @@ function fitLayout() {
     const settings = layoutSettings.get(element) || {};
     const bounds = layoutBounds(element);
     const rect = element.getBoundingClientRect();
-    const x = Math.max(bounds.left-rect.left,Math.min(bounds.right-rect.right,boundedSetting(settings.offsetX,-1200,1200,0)));
-    const y = Math.max(bounds.top-rect.top,boundedSetting(settings.offsetY,-1200,1200,0));
+    const [minX,maxX] = MayinModel.axisOffsetRange(rect.left,rect.width,bounds.left,bounds.right);
+    const x = Math.max(minX,Math.min(maxX,boundedSetting(settings.offsetX,-1200,1200,0)));
+    const pageTop = rect.top + scrollY;
+    const minY = 16 - pageTop;
+    const maxY = pageHeight - 16 - (pageTop + rect.height);
+    const y = Math.max(minY, Math.min(maxY, boundedSetting(settings.positionY,-1200,1200,0)));
     element.style.setProperty('--layout-x',x+'px');
     element.style.setProperty('--layout-y',y+'px');
   });
@@ -309,8 +316,27 @@ function bindContentLayout() {
   });
 }
 
+function layoutTarget(element) {
+  return element.closest('.large-link,.contact-link,.project-title-row,.project-meta') || element;
+}
+
+function applyElementOrder(site) {
+  const parents = new Set([...document.querySelectorAll('[data-layout-style-id]')].map(element => element.parentElement).filter(Boolean));
+  parents.forEach(parent => {
+    const peers = [...parent.children].filter(element => element.dataset.layoutStyleId);
+    if (peers.length < 2) return;
+    const ordered = MayinModel.orderPeers(peers, element => site.elementStyles?.[element.dataset.layoutStyleId]?.order);
+    if (ordered.every((element, index) => element === peers[index])) return;
+    const peerSet = new Set(peers);
+    let index = 0;
+    const children = [...parent.childNodes].map(node => peerSet.has(node) ? ordered[index++] : node);
+    parent.replaceChildren(...children);
+  });
+}
+
 function applyElementStyles(site, captureBase = false) {
   const occurrences = new Map(), migrated = {};
+  document.querySelectorAll('[data-layout-style-id]').forEach(element => delete element.dataset.layoutStyleId);
   const projectIndex = page === 'project' ? runtime.projects.findIndex(project => project.slug === new URLSearchParams(location.search).get('slug')) : -1;
   const scope = projectIndex >= 0 ? 'page-' + MayinModel.styleKey(runtime, `projects.${projectIndex}`, page) : 'page-' + (page || 'home');
   const useLegacy = !site.styleMigrations?.[scope];
@@ -327,13 +353,14 @@ function applyElementStyles(site, captureBase = false) {
       site.elementStyles[styleId] = structuredClone(style);
       migrated[styleId] = structuredClone(style);
     }
-    const layoutElement = element.closest('.large-link,.contact-link,.project-title-row') || element;
+    const layoutElement = layoutTarget(element);
     if (captureBase || element.dataset.baseHidden === undefined) element.dataset.baseHidden = String(element.hidden);
     const properties = ['font-family','font-size','text-align','color','background','display','width','max-width','margin-left','margin-right','margin-inline','min-height','padding','border-radius','transform'];
     properties.forEach(property => element.style.removeProperty(property));
     if (layoutElement !== element) properties.slice(4).forEach(property => layoutElement.style.removeProperty(property));
     element.hidden = element.dataset.baseHidden === 'true';
-    bindLayout(layoutElement,style || {});
+    layoutElement.dataset.layoutStyleId = styleId;
+    bindLayout(layoutElement,style || {},'text');
     if (layoutElement !== element) layoutElement.hidden = element.hidden;
     if (!style) return;
     const number = (value,min,max) => value != null && value !== '' && Number.isFinite(Number(value)) ? Math.max(min,Math.min(max,Number(value))) : null;
@@ -352,6 +379,7 @@ function applyElementStyles(site, captureBase = false) {
     if (style.minHeight != null && !compactLayout.matches) layoutElement.style.minHeight = `${number(style.minHeight,0,720) || 0}px`;
     if (style.radius) layoutElement.style.borderRadius = `${number(style.radius,0,100) || 0}px`;
   });
+  applyElementOrder(site);
   site.styleMigrations ||= {};
   site.styleMigrations[scope] = true;
   if (isAdminPreview && useLegacy) window.parent.postMessage({type:'mayin:style-map',styles:migrated,scope},location.origin);
@@ -363,7 +391,7 @@ function projectCard(project, index) {
   const image = project.cover ? `<img src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" loading="lazy" decoding="async" />` : '<span class="project-image__empty">Image à ajouter</span>';
   const cutout = project.coverKind === 'cutout' ? ' project-card--cutout' : '';
   const radius = radiusClass(project.coverRadius || 'soft');
-  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-cover-group" data-layout-path="projects.${index}" style="${imageStyle(project)}"><div class="project-image" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><span class="project-category" data-edit-path="projects.${index}.cover" data-edit-label="Image et catégorie">${categoryLabel(project.category)}</span></div><div class="project-meta"><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span></div><div class="project-title-row"><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2><span class="project-arrow" aria-hidden="true">↗</span></div></a>`;
+  return `<a class="project-card project-card--${safeToken(project.layout, 'wide')}${cutout}${projectCardSizeClass(project)} ${radius}" style="${projectCardStyle(project)}" data-category="${escapeHtml(project.category)}" data-edit-path="projects.${index}" data-edit-label="Projet" href="project.html?slug=${encodeURIComponent(project.slug)}"><div class="project-cover-group" data-layout-path="projects.${index}" style="${imageStyle(project)}"><div class="project-image" data-edit-path="projects.${index}.cover" data-edit-label="Cadre et image du projet">${image}</div><span class="project-category" data-edit-path="projects.${index}.cover" data-edit-label="Image et catégorie">${categoryLabel(project.category)}</span></div><div class="project-card__text"><div class="project-title-row"><h2 data-edit-path="projects.${index}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h2><span class="project-arrow" aria-hidden="true">↗</span></div><div class="project-meta"><span data-edit-path="projects.${index}.description" data-edit-label="Description du projet" data-edit-inline="true">${escapeHtml(project.description)}</span></div></div></a>`;
 }
 
 function renderProjects(projects) {
@@ -631,7 +659,9 @@ if (isAdminPreview) {
     if (selectedPreviewElement && selectedPreviewElement !== editable) selectedPreviewElement.classList.remove('admin-selected');
     editable.classList.add('admin-selected');
     selectedPreviewElement = editable;
-    window.parent.postMessage({ type: 'mayin:select', path: editable.dataset.editPath, styleId: editable.dataset.editStyleId || '', label: editable.dataset.editLabel || 'Élément' }, location.origin);
+    const target = layoutTarget(editable);
+    const layoutPeers = [...(target.parentElement?.children || [])].filter(element => element.dataset.layoutStyleId).map(element => ({ styleId:element.dataset.layoutStyleId }));
+    window.parent.postMessage({ type: 'mayin:select', path: editable.dataset.editPath, styleId: editable.dataset.editStyleId || '', label: editable.dataset.editLabel || 'Élément', layoutPeers }, location.origin);
     if (inline) requestAnimationFrame(() => placeCaretAtPoint(editable, event));
   };
   document.addEventListener('pointerdown', (event) => {

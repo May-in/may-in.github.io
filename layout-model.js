@@ -14,6 +14,27 @@
       item.id = id; used.add(id);
     });
   }
+  function moveTo(items, from, to) {
+    if (!Array.isArray(items) || from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return null;
+    const next = items.slice();
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  }
+  function orderPeers(items, getOrder) {
+    if (!Array.isArray(items) || items.length < 2) return items || [];
+    const decorated = items.map((item, index) => {
+      const order = Number(getOrder(item));
+      return { item, index, order: Number.isFinite(order) ? order : index };
+    });
+    return decorated.sort((a, b) => a.order - b.order || a.index - b.index).map(entry => entry.item);
+  }
+  function axisOffsetRange(start, size, canvasStart, canvasEnd) {
+    const available = Math.max(0, canvasEnd - canvasStart);
+    const alignStart = canvasStart - start;
+    const alignEnd = canvasEnd - (start + size);
+    return size > available ? [alignEnd, alignStart] : [alignStart, alignEnd];
+  }
   function ensureIds(data) {
     identify(data.projects, 'project');
     (data.projects || []).forEach(project => {
@@ -37,7 +58,7 @@
     }).join('/');
     return 'text-' + hash(page + '/' + identity + '/' + occurrence);
   }
-  const api = { ensureIds, styleKey };
+  const api = { ensureIds, styleKey, moveTo, orderPeers, axisOffsetRange };
   root.MayinModel = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);

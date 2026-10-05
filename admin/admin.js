@@ -1,5 +1,5 @@
-import '../layout-model.js?v=2';
-const STUDIO_VERSION = '1.6.1';
+import '../layout-model.js?v=3';
+const STUDIO_VERSION = '1.6.2';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -367,7 +367,7 @@ function renderMedia(projectIndex, mediaIndex) {
     ${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
     ${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">La largeur peut atteindre 200 %. Trois images peuvent partager une ligne sur ordinateur ; elles s’empilent sur téléphone et les légendes reprennent toute la largeur.</p></div>
+    <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager la ligne. Sur téléphone, elles s’empilent et les légendes prennent la largeur disponible.</p></div>
     <div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer cette image</button></div>`;
 }
 function renderGalleryItem(index) {

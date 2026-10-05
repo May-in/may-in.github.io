@@ -2,14 +2,14 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
-const BUILD_VERSION = '1.6.1';
+const BUILD_VERSION = '1.6.2';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=16"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=17"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -268,8 +268,8 @@ function bindLayout(element, settings = {}, kind = 'media') {
   element.dataset.layoutItem = '';
   element.dataset.layoutKind = kind;
   layoutSettings.set(element, settings);
-  if (settings.width != null) element.style.setProperty('--layout-width', boundedSetting(settings.width, 20, 200, 100) + '%');
-  else element.style.removeProperty('--layout-width');
+  // Define a local default so child captions never inherit a parent's zoom.
+  element.style.setProperty('--layout-width', boundedSetting(settings.width, 20, 200, 100) + '%');
   element.style.setProperty('--layout-flow-y', boundedSetting(settings.offsetY, -1200, 1200, 0) + 'px');
   queueLayout();
 }
@@ -660,13 +660,6 @@ if (isAdminPreview) {
     const stacked = document.elementsFromPoint(event.clientX, event.clientY).map((node) => node.closest?.('[data-edit-path]')).filter((node) => node && !seen.has(node) && seen.add(node));
     return stacked.find((node) => node.dataset.editInline === 'true') || direct || stacked[0] || null;
   };
-  const placeCaretAtPoint = (element, event) => {
-    if (element.dataset.editInline !== 'true' || element.contentEditable === 'false') return;
-    element.focus({ preventScroll: true });
-    const range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
-    if (!range || !element.contains(range.startContainer)) return;
-    const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range);
-  };
   const selectPreviewElement = (event) => {
     if (!previewEditMode) return;
     const editable = editableAtPoint(event);
@@ -679,7 +672,6 @@ if (isAdminPreview) {
     const target = layoutTarget(editable);
     const layoutPeers = [...(target.parentElement?.children || [])].filter(element => element.dataset.layoutStyleId).map(element => ({ styleId:element.dataset.layoutStyleId }));
     window.parent.postMessage({ type: 'mayin:select', path: editable.dataset.editPath, styleId: editable.dataset.editStyleId || '', label: editable.dataset.editLabel || 'Élément', layoutPeers }, location.origin);
-    if (inline) requestAnimationFrame(() => placeCaretAtPoint(editable, event));
   };
   document.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'touch' || event.pointerType === 'pen') touchStart = { x: event.clientX, y: event.clientY, id: event.pointerId };

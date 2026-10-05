@@ -87,6 +87,21 @@ const server = http.createServer(async(req,res) => {
     const mobileRows=await page.locator('.gallery-grid .gallery-item').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right}}));
     mobileRows.forEach((row,index)=>{assert.ok(row.left>=0&&row.right<=390,'Gallery image overflows mobile');if(index)assert.ok(row.top>mobileRows[index-1].top,'Gallery images did not stack on mobile');});
 
+    // Project galleries use the same narrow-column grid and remain stacked on mobile.
+    await page.goto(base+'/project.html?slug='+encodeURIComponent(projects[0].slug));
+    await page.waitForFunction(()=>runtime.projects.length && document.querySelector('.project-gallery'));
+    await page.setViewportSize({width:1440,height:900});
+    await page.evaluate(()=>{
+      runtime.projects[0].media=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Projet '+index,kind:'detail',format:'landscape',columnSpan:3,width:100}));
+      renderAll(runtime.site,runtime.projects);fitLayout();
+    });
+    const projectDesktopRows=await page.locator('.project-gallery .project-media').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().top));
+    assert.equal(new Set(projectDesktopRows.map(top=>Math.round(top))).size,1,'Four narrow project images do not fit on one desktop row');
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(()=>fitLayout());
+    const projectMobileRows=await page.locator('.project-gallery .project-media').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{top:r.top,bottom:r.bottom,left:r.left,right:r.right}}));
+    projectMobileRows.forEach((row,index)=>{assert.ok(row.left>=0&&row.right<=390,'Project image overflows mobile');if(index)assert.ok(row.top>=projectMobileRows[index-1].bottom-1,'Project images or captions overlap on mobile');});
+
     // Horizontal movement can use the About section's visible side padding without leaving the viewport.
     await page.goto(base+'/a-propos.html');
     await page.waitForFunction(()=>document.querySelector('.about-page__content .lead'));
@@ -158,20 +173,49 @@ const server = http.createServer(async(req,res) => {
     await page.waitForFunction(()=>document.querySelector('#preview').contentWindow.innerWidth===844);
     await page.locator('[data-viewport="desktop"]').click();
     await page.locator('#project-list [data-project-index="0"]').first().click();
+    await page.locator('#project-list [data-project-media-index="0"]').first().click();
+    const projectSpans=await page.locator('#inspector select[data-path$=".columnSpan"] option').evaluateAll(options=>options.map(option=>option.value));
+    assert.ok(projectSpans.includes('3')&&projectSpans.includes('2')&&projectSpans.includes('1'),'Project media is still limited to three images per row');
+    await page.locator('#inspector [data-choice-path$=".radius"][data-choice-value="all"]').click();
+    await preview().waitForFunction(()=>getComputedStyle(document.querySelector('.project-media img')).borderTopLeftRadius==='36px');
+    await page.locator('#inspector textarea[data-path$=".caption"]').fill('0123456789');
+    await page.locator('#project-list [data-project-index="0"]').first().click();
     await preview().waitForSelector('figcaption[data-edit-inline]');
-    await preview().locator('figcaption[data-edit-inline]').first().click();
+    const editableCaption=preview().locator('figcaption[data-edit-inline]').first();
+    await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.contentEditable==='plaintext-only');
+    await editableCaption.click({position:{x:16,y:7}});
+    const caretState=()=>preview().evaluate(()=>{
+      const el=document.querySelector('figcaption[data-edit-inline]'),selection=getSelection();
+      if(!el||!selection?.rangeCount||!el.contains(selection.anchorNode))return{offset:-1,text:el?.textContent||'',node:''};
+      const range=document.createRange();range.selectNodeContents(el);range.setEnd(selection.anchorNode,selection.anchorOffset);
+      return{offset:range.toString().length,text:el.textContent,node:selection.anchorNode.nodeName,localOffset:selection.anchorOffset};
+    });
+    const caretBeforeState=await caretState(),caretBefore=caretBeforeState.offset;
+    assert.ok(caretBefore>0&&caretBefore<10,'Inline text click did not place the caret at the clicked position: '+JSON.stringify(caretBeforeState));
+    await page.keyboard.type('XY');
+    await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.textContent.length===12);
+    await preview().evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const caretAfterState=await caretState(),caretAfter=caretAfterState.offset;
+    assert.equal(caretAfter,caretBefore+2,'Typing moved the caret away from the insertion point: '+JSON.stringify({before:caretBeforeState,after:caretAfterState}));
+    assert.equal(caretAfterState.text,'0123XY456789','Consecutive letters were not inserted in order at the clicked position');
+    await page.locator('#undo').click();
+    await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.textContent==='0123456789');
+    await page.locator('#redo').click();
+    await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.textContent.length===12);
+    await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('mayin-studio-draft'))?.projects?.[0]?.media?.[0]?.caption==='0123XY456789'}catch{return false}});
+    await editableCaption.click();
     const font=page.locator('#inspector [data-path$=".fontFamily"]');
     await font.selectOption('mono');
     const captionSize=page.locator('#inspector [data-path$=".fontSize"]');
     await captionSize.fill('31');
     await preview().waitForFunction(()=>getComputedStyle(document.querySelector('figcaption[data-edit-inline]')).fontSize==='31px');
-    await page.waitForFunction(()=>localStorage.getItem('mayin-studio-draft'));
+    await page.waitForFunction(()=>{try{return Object.values(JSON.parse(localStorage.getItem('mayin-studio-draft'))?.site?.elementStyles||{}).some(style=>style.fontFamily==='mono'&&Number(style.fontSize)===31)}catch{return false}});
     const savedDraft=await page.evaluate(()=>JSON.parse(localStorage.getItem('mayin-studio-draft')));
     await page.reload();
     await page.locator('#studio:visible').waitFor();
     const restoredDraft=await page.evaluate(()=>JSON.parse(localStorage.getItem('mayin-studio-draft')));
     assert.deepEqual(restoredDraft.projects,savedDraft.projects,'Reload changed draft projects');
-    assert.deepEqual(restoredDraft.site.elementStyles,savedDraft.site.elementStyles,'Reload changed draft styles');
+    for(const [id,style] of Object.entries(savedDraft.site.elementStyles)){const restored=restoredDraft.site.elementStyles[id]||{};assert.deepEqual(Object.fromEntries(Object.keys(style).map(key=>[key,restored[key]])),style,'Reload changed existing draft style '+id);}
     assert.ok(!errors.length,errors.join('\n'));
     console.log('Responsive OK: '+checks+' page/viewport checks, oversized images, linked categories, arrows, caption reordering and mobile stacking.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}

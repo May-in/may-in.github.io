@@ -33,7 +33,8 @@
     const available = Math.max(0, canvasEnd - canvasStart);
     const alignStart = canvasStart - start;
     const alignEnd = canvasEnd - (start + size);
-    return size > available ? [alignEnd, alignStart] : [alignStart, alignEnd];
+    // Keep the clamp interval ordered even when an item exceeds its canvas.
+    return [Math.min(alignStart, alignEnd), Math.max(alignStart, alignEnd)];
   }
   function ensureIds(data) {
     identify(data.projects, 'project');

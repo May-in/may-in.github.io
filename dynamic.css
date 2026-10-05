@@ -98,8 +98,8 @@ main,section,figure,.project-card,.project-title-row,.project-meta,.footer-botto
 .radius-all img,.radius-all .project-image{border-radius:36px!important}
 
 /* No clipping: actual widths and positions are fitted to the available canvas. */
-[data-layout-item]{position:relative;left:var(--layout-x,0);top:var(--layout-y,0);width:var(--layout-width,revert);max-width:none!important;min-width:0;transform:none!important;margin-top:calc(var(--layout-top,0px) + var(--layout-flow-y,0px))!important}
-.project-cover-group[data-layout-item],.project-hero__visual[data-layout-item],.project-media[data-layout-item],.gallery-item[data-layout-item],.custom-block[data-layout-item]{width:var(--layout-width,100%)}
+[data-layout-item]{position:relative;left:var(--layout-x,0);top:var(--layout-y,0);width:min(var(--layout-width,100%),var(--layout-max,100%));max-width:none!important;min-width:0;transform:none!important;margin-top:calc(var(--layout-top,0px) + var(--layout-flow-y,0px))!important}
+.project-cover-group[data-layout-item],.project-hero__visual[data-layout-item],.project-media[data-layout-item],.gallery-item[data-layout-item],.custom-block[data-layout-item]{width:min(var(--layout-width,100%),var(--layout-max,100%))}
 .admin-preview--edit [data-edit-path]{cursor:pointer;outline:1px solid transparent;outline-offset:4px;transition:none}
 .admin-preview--edit [data-edit-path]:hover{outline-color:color-mix(in srgb,var(--wine) 65%,transparent)}
 .admin-preview--edit [data-edit-inline]{cursor:text;position:relative;z-index:4;pointer-events:auto!important}

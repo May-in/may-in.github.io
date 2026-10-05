@@ -50,27 +50,32 @@
     {
       "label": "Accueil",
       "href": "index.html",
-      "visible": true
+      "visible": true,
+      "id": "nav-epw9f3"
     },
     {
       "label": "Projets",
       "href": "projets.html",
-      "visible": true
+      "visible": true,
+      "id": "nav-efwnq4"
     },
     {
       "label": "Galerie",
       "href": "galerie.html",
-      "visible": true
+      "visible": true,
+      "id": "nav-f9vgt1"
     },
     {
       "label": "À propos",
       "href": "a-propos.html",
-      "visible": true
+      "visible": true,
+      "id": "nav-ezvv42"
     },
     {
       "label": "Contact",
       "href": "contact.html",
-      "visible": true
+      "visible": true,
+      "id": "nav-dlxun7"
     }
   ],
   "socialLinks": [],
@@ -90,8 +95,14 @@
         "style": "lead",
         "text": "Des espaces qui racontent une histoire",
         "width": 100,
-        "offsetX": 115,
-        "offsetY": -550
+        "offsetX": 220,
+        "offsetY": -600,
+        "id": "block-1aaibhf",
+        "fontSize": 43,
+        "textColor": "accent",
+        "columnSpan": "8",
+        "spacing": 48,
+        "positionY": 25
       }
     ],
     "projects": [],
@@ -103,10 +114,12 @@
         "caption": "",
         "radius": "soft",
         "width": 60,
-        "offsetX": -305,
+        "offsetX": -315,
         "spacing": 0,
-        "offsetY": -175,
-        "format": "original"
+        "offsetY": -25,
+        "format": "original",
+        "id": "block-5fxux6",
+        "positionY": -200
       },
       {
         "type": "image",
@@ -114,9 +127,11 @@
         "alt": "",
         "caption": "",
         "radius": "pill",
-        "width": 35,
-        "offsetX": 665,
-        "offsetY": -325
+        "width": 25,
+        "offsetX": 625,
+        "offsetY": -445,
+        "id": "block-1z03qd5",
+        "positionY": -170
       },
       {
         "type": "image",
@@ -125,8 +140,23 @@
         "caption": "",
         "radius": "soft",
         "width": 25,
-        "offsetY": -380,
-        "offsetX": 90
+        "offsetY": -195,
+        "offsetX": -105,
+        "id": "block-fnhn6j",
+        "positionY": -185
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791208929884-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 40,
+        "columnSpan": "8",
+        "format": "original",
+        "positionY": -735,
+        "offsetX": 330,
+        "id": "block-1pru3kv"
       }
     ],
     "about": [
@@ -137,9 +167,11 @@
         "caption": "",
         "radius": "soft",
         "width": 40,
-        "offsetY": -435,
+        "offsetY": -485,
         "offsetX": -285,
-        "spacing": 0
+        "spacing": 0,
+        "id": "block-1guydu4",
+        "positionY": -105
       },
       {
         "width": 65,
@@ -156,8 +188,10 @@
         "type": "text",
         "style": "body",
         "text": "Je m'appelle Célia May et je suis actuellement en première année de master à l'école supérieur des arts de Mons en architecture d'intérieur. \nAussi loin que je m'en souvienne, j'ai toujours été créative et manuelle. Plus jeune, j'aimais inventer des histoires ; j'imaginais alors tout ce qui les composait : les objets, les personnes mais également les espaces. L'imagination a toujours été mon super pouvoir et l'architecture d'intérieur était alors une évidence pour moi.",
-        "offsetY": -445,
-        "offsetX": -160
+        "offsetY": 50,
+        "offsetX": 250,
+        "id": "block-1qct2yl",
+        "positionY": -170
       },
       {
         "width": 65,
@@ -174,8 +208,10 @@
         "type": "text",
         "style": "body",
         "text": "Avec le recul, je me rends compte que beaucoup de choses qui m'attiraient depuis toujours se retrouvent dans ce métier : imaginer, transformer des espaces, bricoler, dessiner, me projeter, avoir un impact réel dans ce monde, ... Mes études en architecture d'intérieur ont finalement réuni toutes ces passions en une seule pratique : construire des espaces qui ont un impact réel sur la vie des personnes qui y rentrent. ",
-        "offsetY": -435,
-        "offsetX": -160
+        "offsetY": 185,
+        "offsetX": 265,
+        "id": "block-1qjsxit",
+        "positionY": -360
       },
       {
         "width": 100,
@@ -192,8 +228,10 @@
         "type": "text",
         "style": "body",
         "text": "Pour ce qui est de ma façon de concevoir, je cherche principalement à ce que chaque élément du projet trouve sa place dans une réflexion globale. Chaque matière, chaque couleur, chaque forme raconte quelque chose, participe à un usage ou contribue à une atmosphère. Le hasard n'y a pas sa place.\n\nJ'ai la conviction qu'un intérieur ne peut imposer une seule manière de vivre ce pourquoi je laisse une place à l'appropriation et au changement. Intime aujourd'hui, partagé demain, ouvert ou séparé, chaque espace offre des configurations multiples permettant à ses usagers de faire évoluer leur lieu de vie. On peut donc régulièrement retrouver dans mes aménagements des mobiliers qui s'assemblent, se séparent, coulissent, pivotent, ... Le client doit être maitre et créer, lui aussi, son propre aménagement. \n\nAu-delà de sa fonction, un espace est sensible, il a une influence sur nos émotions, notre comportement. Je porte donc une attention particulière à la dimension neurologique des espaces que cela soit pour s'y sentir naturellement bien ou pour susciter de la surprise, de la curiosité, une évasion.\n\nJ'aime les lieux qui racontent une histoire, que chacun interprète différemment. Il y a souvent dans mes projets une petite part d'extraordinaire : un détail inattendu, un passage, une matière, un dispositif qui permet de vivre différemment cet intérieur. Parce qu'un intérieur est plus qu'un cadre, il devient alors une expérience.\n\n",
-        "offsetY": -430,
-        "offsetX": -15
+        "offsetY": 220,
+        "offsetX": -15,
+        "id": "block-13lil4l",
+        "positionY": -570
       }
     ],
     "contact": [],
@@ -221,7 +259,8 @@
         "minHeight": 0,
         "radius": "none",
         "offsetX": -105,
-        "offsetY": 65
+        "offsetY": 65,
+        "id": "block-1wtxhts"
       }
     ]
   },
@@ -491,7 +530,476 @@
     "project-text-10": {
       "offsetX": 275,
       "align": "center"
+    },
+    "text-xf8yzi": {
+      "offsetY": -65
+    },
+    "text-1ggreux": {
+      "width": 100,
+      "offsetX": 25,
+      "align": "left",
+      "fontSize": 15,
+      "offsetY": -25
+    },
+    "text-1xn3rny": {
+      "offsetX": -5,
+      "offsetY": 20,
+      "width": 100,
+      "fontSize": 15
+    },
+    "text-1iudn3k": {
+      "offsetY": -65
+    },
+    "text-1lz84gw": {
+      "width": 80,
+      "offsetX": -45,
+      "offsetY": 70,
+      "textAlign": "justify"
+    },
+    "text-dit6av": {
+      "fontSize": 19,
+      "width": 100,
+      "textAlign": "justify",
+      "offsetX": -130,
+      "align": "center",
+      "offsetY": 25
+    },
+    "text-joxz7s": {
+      "offsetY": 15,
+      "offsetX": -15,
+      "positionY": 330
+    },
+    "text-fmqhxo": {
+      "offsetY": -350,
+      "offsetX": 80,
+      "positionY": 330
+    },
+    "text-1pha8nd": {
+      "offsetX": -20,
+      "offsetY": 35
+    },
+    "text-11l8kcl": {
+      "offsetX": 100,
+      "offsetY": -795
+    },
+    "text-1dhsm3t": {
+      "offsetY": 45,
+      "offsetX": -35,
+      "width": 80
+    },
+    "text-13vpu05": {
+      "offsetY": -495,
+      "offsetX": 105
+    },
+    "text-1kwndoz": {
+      "offsetY": 90,
+      "offsetX": -35
+    },
+    "text-6raoz": {
+      "offsetX": 40,
+      "offsetY": 25
+    },
+    "text-1pgjy59": {
+      "offsetY": 55,
+      "offsetX": -25
+    },
+    "text-1q13vrl": {
+      "offsetX": 60,
+      "offsetY": -35
+    },
+    "text-1cwp96c": {
+      "offsetY": 40,
+      "offsetX": 65
+    },
+    "text-14f590w": {
+      "offsetX": 85,
+      "offsetY": -415
+    },
+    "text-1kn85xq": {
+      "offsetY": 50,
+      "offsetX": -20
+    },
+    "text-tina7i": {
+      "offsetX": 65,
+      "offsetY": -35
+    },
+    "text-9ao2uu": {
+      "offsetY": -50,
+      "offsetX": -15
+    },
+    "text-us21g6": {
+      "offsetY": -145,
+      "offsetX": 60
+    },
+    "text-1q2j0b": {
+      "offsetY": -40,
+      "offsetX": -25,
+      "width": 75
+    },
+    "text-1lyr4qz": {
+      "offsetX": 105,
+      "offsetY": -130
+    },
+    "text-oszln3": {
+      "offsetY": -50,
+      "offsetX": -65
+    },
+    "text-1b5ajrr": {
+      "offsetY": -155,
+      "offsetX": -25
+    },
+    "text-86g4dc": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-balr38": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-11hxcew": {
+      "offsetY": -155,
+      "offsetX": 795,
+      "textAlign": "justify",
+      "width": 25
+    },
+    "text-1g0ha80": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-3renwf": {
+      "textColor": "accent"
+    },
+    "text-qlx3jm": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40,
+      "width": 30
+    },
+    "text-g77w0g": {
+      "textColor": "accent"
+    },
+    "text-1rqvy4p": {
+      "textColor": "accent",
+      "width": 100
+    },
+    "text-1qyqjay": {
+      "textColor": "accent",
+      "offsetY": 15,
+      "offsetX": 50
+    },
+    "text-7tms93": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-d33fcv": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1k0qgc0": {
+      "offsetY": -235,
+      "offsetX": 485,
+      "textAlign": "justify"
+    },
+    "text-iexoyp": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-1u3jvzy": {
+      "textColor": "accent"
+    },
+    "text-1lzr8f4": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40
+    },
+    "text-1cg49q6": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-ds2aam": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1f8lcjs": {
+      "offsetY": -80,
+      "offsetX": -15,
+      "textAlign": "justify",
+      "width": 95,
+      "align": "left"
+    },
+    "text-f9it8q": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-18m0j59": {
+      "textColor": "accent"
+    },
+    "text-nvra35": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 185,
+      "width": 60
+    },
+    "text-a9pdji": {
+      "textColor": "accent",
+      "width": 45,
+      "offsetX": 380,
+      "offsetY": -40
+    },
+    "text-14kq6n5": {
+      "offsetY": -220,
+      "textColor": "accent"
+    },
+    "text-d6neu0": {
+      "width": 95,
+      "offsetY": -15,
+      "offsetX": -50
+    },
+    "text-x6r2jn": {
+      "offsetX": 500
+    },
+    "text-1ui1fbo": {
+      "fontSize": 16,
+      "width": 100,
+      "offsetY": 500,
+      "hidden": false
+    },
+    "text-1l3juir": {
+      "offsetX": 90,
+      "offsetY": 500
+    },
+    "text-1bl680c": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-1mzm88": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-31yjst": {
+      "offsetY": -235,
+      "offsetX": 755,
+      "textAlign": "justify",
+      "width": 60
+    },
+    "text-173ugcr": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-1nep7hb": {
+      "textColor": "accent"
+    },
+    "text-11w54q3": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40
+    },
+    "text-2l2d31": {
+      "textColor": "accent"
+    },
+    "text-tu9hqv": {
+      "textColor": "accent",
+      "width": 100
+    },
+    "text-1sdd66p": {
+      "textColor": "accent",
+      "offsetY": 15,
+      "offsetX": 50
+    },
+    "text-1rm95zb": {
+      "textColor": "accent"
+    },
+    "text-1ag3ihk": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-s0v9zw": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1v3qjb5": {
+      "offsetY": -235,
+      "offsetX": 980,
+      "textAlign": "justify"
+    },
+    "text-70786x": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-saog31": {
+      "textColor": "accent"
+    },
+    "text-232kv3": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40
+    },
+    "text-1k0a2mh": {
+      "textColor": "accent"
+    },
+    "text-1wtu6ns": {
+      "textColor": "accent",
+      "width": 100
+    },
+    "text-100swag": {
+      "textColor": "accent",
+      "offsetY": 15,
+      "offsetX": 50
+    },
+    "text-16bwp4u": {
+      "textColor": "accent"
+    },
+    "text-t5ruyb": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-14b4tf": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1c84u87": {
+      "offsetY": -235,
+      "offsetX": 625,
+      "textAlign": "justify"
+    },
+    "text-vi7ygj": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-sgwk6k": {
+      "textColor": "accent"
+    },
+    "text-823d6o": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40
+    },
+    "text-1b9ua9x": {
+      "textColor": "accent"
+    },
+    "text-1ttohw6": {
+      "textColor": "accent",
+      "width": 100
+    },
+    "text-84408v": {
+      "textColor": "accent",
+      "offsetY": 15,
+      "offsetX": 50
+    },
+    "text-njm8st": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-1fjvr3l": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1qpcs91": {
+      "offsetY": -390,
+      "offsetX": 785,
+      "textAlign": "justify",
+      "width": 40
+    },
+    "text-3ppiiq": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-iqm1gj": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-1b7eu4z": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-zc1is7": {
+      "offsetY": -235,
+      "offsetX": 470,
+      "textAlign": "justify",
+      "width": 55
+    },
+    "text-1xrj06d": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-1ur73ik": {
+      "textColor": "accent"
+    },
+    "text-1xz7q5s": {
+      "textColor": "accent",
+      "offsetY": 0,
+      "offsetX": 40
+    },
+    "text-1wk8q2h": {
+      "textColor": "accent"
+    },
+    "text-18e3tis": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-1mjhgfk": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-173dtjm": {
+      "offsetY": -235,
+      "offsetX": 275,
+      "textAlign": "justify"
+    },
+    "text-8vc5zq": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-11bt8kc": {
+      "textColor": "accent"
+    },
+    "text-1idi242": {
+      "offsetX": 275,
+      "align": "center"
+    },
+    "text-171bg6y": {
+      "offsetX": -75,
+      "width": 100,
+      "textAlign": "justify"
+    },
+    "text-1ub4m1l": {
+      "offsetY": -15,
+      "offsetX": 40,
+      "textAlign": "justify"
+    },
+    "text-18nki2c": {
+      "offsetY": 25,
+      "offsetX": 50
+    },
+    "text-14hdbgm": {
+      "textColor": "accent"
     }
   },
-  "studioVersion": "1.5.3"
+  "studioVersion": "1.6.0",
+  "styleMigrations": {
+    "page-home": true,
+    "page-projects": true,
+    "page-text-pkj491": true,
+    "page-text-16kxs1u": true,
+    "page-text-w5uj7b": true,
+    "page-gallery": true,
+    "page-about": true,
+    "page-text-t2d06h": true,
+    "page-text-tgkia5": true,
+    "page-text-vudcpi": true,
+    "page-text-1v1qo9w": true,
+    "page-text-19fzo3q": true,
+    "page-text-zva5s1": true,
+    "page-text-1daf89f": true,
+    "page-contact": true
+  }
 }

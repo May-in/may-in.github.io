@@ -2,6 +2,7 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
+const BUILD_VERSION = '1.6.0';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;
@@ -151,7 +152,7 @@ function applySiteFields(site) {
   }
   document.querySelectorAll('[data-site]').forEach((element) => {
     const key = element.dataset.site;
-    const value = site[key];
+    const value = page === 'notFound' && key === 'studioVersion' ? BUILD_VERSION : site[key];
     if (value === undefined) return;
     element.textContent = value;
     element.hidden = value === '' && key !== 'email';

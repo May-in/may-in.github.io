@@ -47,6 +47,56 @@ const server = http.createServer(async(req,res) => {
         checks++;
       }
     }
+    // The home headline keeps its intended order on compact screens; navigation colors follow their background.
+    await page.goto(base+'/index.html');
+    await page.waitForFunction(()=>runtime.site && document.querySelector('.home-intro [data-custom-blocks="home"] .custom-block'));
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(()=>fitLayout());
+    const homeOrder=await page.evaluate(()=>{
+      const intro=document.querySelector('.home-intro');
+      return {
+        eyebrow:intro.querySelector(':scope > .eyebrow').getBoundingClientRect().top,
+        headline:intro.querySelector('.custom-block--mobile-before').getBoundingClientRect().top,
+        copy:intro.querySelector(':scope > div:not([data-custom-blocks])').getBoundingClientRect().top
+      };
+    });
+    assert.ok(homeOrder.eyebrow<homeOrder.headline && homeOrder.headline<homeOrder.copy,'Home custom headline is not before the intro text on mobile');
+    const navColors=await page.evaluate(()=>{
+      const bar=document.querySelector('.topbar'),nav=document.querySelector('.navigation');
+      const link=nav.querySelector('a:not([aria-current])');
+      bar.classList.remove('is-scrolled');const hero=getComputedStyle(link).color;
+      bar.classList.add('is-scrolled');const scrolled=getComputedStyle(link).color;
+      bar.classList.remove('is-scrolled');nav.classList.add('is-open');const open=getComputedStyle(link).color;
+      return {hero,scrolled,open,ink:getComputedStyle(document.body).color};
+    });
+    assert.notEqual(navColors.hero,navColors.scrolled,'Home navigation color does not adapt after scrolling');
+    assert.equal(navColors.open,navColors.ink,'Mobile menu text is not dark on its light panel');
+
+    // The gallery can use narrower desktop spans while remaining a one-column mobile layout.
+    await page.goto(base+'/galerie.html');
+    await page.waitForFunction(()=>runtime.site && document.querySelector('#gallery-grid'));
+    await page.setViewportSize({width:1440,height:900});
+    await page.evaluate(()=>{
+      runtime.site.gallery.items=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Test '+index,category:'Test',size:'small',columnSpan:3,radius:'none'}));
+      renderGallery(runtime.site);bindContentLayout();fitLayout();
+    });
+    const desktopRows=await page.locator('.gallery-grid .gallery-item').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().top));
+    assert.equal(new Set(desktopRows.map(top=>Math.round(top))).size,1,'Four narrow gallery images do not fit on one desktop row');
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(()=>fitLayout());
+    const mobileRows=await page.locator('.gallery-grid .gallery-item').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right}}));
+    mobileRows.forEach((row,index)=>{assert.ok(row.left>=0&&row.right<=390,'Gallery image overflows mobile');if(index)assert.ok(row.top>mobileRows[index-1].top,'Gallery images did not stack on mobile');});
+
+    // Horizontal movement can use the About section's visible side padding without leaving the viewport.
+    await page.goto(base+'/a-propos.html');
+    await page.waitForFunction(()=>document.querySelector('.about-page__content .lead'));
+    await page.setViewportSize({width:1440,height:900});
+    const aboutBounds=await page.locator('.about-page__content .lead').evaluate(el=>{
+      const canvas=el.parentElement.closest('.about-page__content'),style=getComputedStyle(canvas),rect=canvas.getBoundingClientRect();
+      return {available:layoutBounds(el).left,contentStart:rect.left+parseFloat(style.paddingLeft)};
+    });
+    assert.ok(aboutBounds.available<aboutBounds.contentStart,'About movement bounds still exclude the visible section padding');
+
     // Extreme settings remain editable on desktop and collapse safely on compact screens.
     await page.goto(base+'/projets.html');
     await page.waitForFunction(()=>runtime.projects.length && document.querySelector('.project-cover-group'));

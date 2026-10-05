@@ -2,14 +2,14 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
-const BUILD_VERSION = '1.6.0';
+const BUILD_VERSION = '1.6.1';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
 
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=15"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=16"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -208,10 +208,11 @@ function imageStyle(item = {}) {
   const position = safeToken(item.objectPosition, 'center');
   const offsetX = boundedSetting(item.offsetX, -1200, 1200, 0);
   const offsetY = boundedSetting(item.offsetY, -1200, 1200, 0);
-  const span = [4,6,8,12].includes(Number(item.columnSpan)) ? Number(item.columnSpan) : item.kind === 'detail' || item.size === 'small' ? 4 : item.kind === 'process' || item.size === 'medium' ? 6 : 8;
+  const requestedSpan = Number(item.columnSpan);
+  const span = Number.isInteger(requestedSpan) && requestedSpan >= 1 && requestedSpan <= 12 ? requestedSpan : item.kind === 'detail' || item.size === 'small' ? 4 : item.kind === 'process' || item.size === 'medium' ? 6 : 8;
   return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px;--media-span:${span}`;
 }
-function mediaGridClass(item = {}) { return [4, 6, 8, 12].includes(Number(item.columnSpan)) ? ' media-grid--custom' : ''; }
+function mediaGridClass(item = {}) { const span = Number(item.columnSpan); return Number.isInteger(span) && span >= 1 && span <= 12 ? ' media-grid--custom' : ''; }
 function projectCardStyle(project = {}) {
   const span = [4, 6, 8, 10, 12].includes(Number(project.cardSpan)) ? Number(project.cardSpan) : 12;
   const align = ['start', 'center', 'end'].includes(project.cardAlign) ? project.cardAlign : 'start';
@@ -241,7 +242,8 @@ function blockStyle(block = {}) {
   const font = safeToken(block.fontFamily, 'sans');
   const offsetX = boundedSetting(block.offsetX, -1200, 1200, 0);
   const offsetY = boundedSetting(block.offsetY, -1200, 1200, 0);
-  const span = [4, 6, 8, 12].includes(Number(block.columnSpan)) ? Number(block.columnSpan) : 12;
+  const requestedSpan = Number(block.columnSpan);
+  const span = Number.isInteger(requestedSpan) && requestedSpan >= 1 && requestedSpan <= 12 ? requestedSpan : 12;
   return `--block-width:${width}%;--block-min-height:${minHeight}px;--block-padding:${padding}px;--block-gap:${gap}px;--block-font-size:${fontSize}px;--block-align:${align};--block-text-align:${textAlign};--block-font:var(--${font});--block-color:${blockTextColor(block)};--block-background:${blockSurface(block)};--block-offset-x:${offsetX}px;--block-offset-y:${offsetY}px;--block-span:${span}`;
 }
 function paletteValue(style, key, site, customKey = 'customColor') {
@@ -277,7 +279,9 @@ function layoutBounds(element) {
   if (!canvas) return { left:16, right:viewport-16, top:0 };
   const rect = canvas.getBoundingClientRect();
   const style = getComputedStyle(canvas);
-  return { left:Math.max(16,rect.left+parseFloat(style.paddingLeft)), right:Math.min(viewport-16,rect.right-parseFloat(style.paddingRight)), top:rect.top+parseFloat(style.paddingTop) };
+  const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+  const borderRight = parseFloat(style.borderRightWidth) || 0;
+  return { left:Math.max(16,rect.left+borderLeft), right:Math.min(viewport-16,rect.right-borderRight), top:rect.top+parseFloat(style.paddingTop) };
 }
 function fitLayout() {
   layoutFrame = 0;
@@ -463,7 +467,8 @@ function renderBlocks(blocks, basePath, extraClass = '') {
   if (!blocks?.length) return '';
   return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
     const path = `${basePath}.${blocks.indexOf(block)}`;
-    const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}`;
+    const mobileBeforeIntro = basePath === 'site.customBlocks.home' && (Number(block.offsetY) < 0 || Number(block.positionY) < 0) ? ' custom-block--mobile-before' : '';
+    const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}${mobileBeforeIntro}`;
     const style = `${imageStyle(block)};${blockStyle(block)}`;
     if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption></figure>`;
     if (block.type === 'quote') return `<blockquote class="custom-block custom-block--quote ${classes}" style="${style}" data-edit-path="${path}" data-edit-label="Citation"><p data-edit-path="${path}.text" data-edit-inline="true">${escapeHtml(block.text || 'Citation')}</p></blockquote>`;
@@ -476,7 +481,17 @@ function renderBlocks(blocks, basePath, extraClass = '') {
 function renderCustomBlocks(site) {
   document.querySelectorAll('[data-custom-blocks]').forEach((container) => {
     const key = container.dataset.customBlocks;
-    container.innerHTML = renderBlocks(site.customBlocks?.[key] || [], `site.customBlocks.${key}`, key.endsWith('Hero') ? 'custom-blocks--hero' : '');
+    const blocks = site.customBlocks?.[key] || [];
+    container.innerHTML = renderBlocks(blocks, `site.customBlocks.${key}`, key.endsWith('Hero') ? 'custom-blocks--hero' : '');
+    if (key === 'home') {
+      const intro = document.querySelector('.home-intro');
+      const hasVisibleBlocks = blocks.some(block => block?.hidden !== true);
+      if (intro) {
+        intro.classList.toggle('home-intro--editable', hasVisibleBlocks);
+        if (hasVisibleBlocks && container.parentElement !== intro) intro.append(container);
+        else if (!hasVisibleBlocks && container.parentElement === intro) intro.after(container);
+      }
+    }
   });
 }
 
@@ -561,7 +576,7 @@ function updatePreviewValue(path, value) {
     if (hero) hero.src = assetSrc(value);
     return;
   }
-  const coverMatch = path.match(/^projects\.(\d+)\.(cover|coverKind|coverRadius|width|cardSpan|cardAlign|objectPosition|offsetX|offsetY)$/);
+  const coverMatch = path.match(/^projects\.(\d+)\.(cover|coverKind|coverRadius|width|cardSpan|cardAlign|objectPosition|offsetX|offsetY|positionY)$/);
   if (coverMatch) {
     const project = runtime.projects[Number(coverMatch[1])];
     const hero = document.querySelector(`.project-hero__image[data-edit-path="projects.${coverMatch[1]}.cover"]`);
@@ -588,9 +603,9 @@ function updatePreviewValue(path, value) {
     }
     return;
   }
-  const mediaMatch = path.match(/^projects\.(\d+)\.media\.(\d+)\.(src|radius|kind|format|align|width|columnSpan|objectPosition|offsetX|offsetY)$/);
-  const galleryMatch = path.match(/^site\.gallery\.items\.(\d+)\.(src|radius|size|format|width|columnSpan|objectPosition|offsetX|offsetY)$/);
-  const blockMatch = path.match(/^(site\.customBlocks\.[^.]+\.\d+|projects\.\d+\.(?:blocks|heroBlocks)\.\d+)\.(src|radius|format|width|columnSpan|align|spacing|fontFamily|fontSize|textAlign|textColor|color|surface|background|padding|minHeight|offsetX|offsetY)$/);
+  const mediaMatch = path.match(/^projects\.(\d+)\.media\.(\d+)\.(src|radius|kind|format|align|width|columnSpan|objectPosition|offsetX|offsetY|positionY)$/);
+  const galleryMatch = path.match(/^site\.gallery\.items\.(\d+)\.(src|radius|size|format|width|columnSpan|objectPosition|offsetX|offsetY|positionY)$/);
+  const blockMatch = path.match(/^(site\.customBlocks\.[^.]+\.\d+|projects\.\d+\.(?:blocks|heroBlocks)\.\d+)\.(src|radius|format|width|columnSpan|align|spacing|fontFamily|fontSize|textAlign|textColor|color|surface|background|padding|minHeight|offsetX|offsetY|positionY)$/);
   if (mediaMatch || galleryMatch || blockMatch) {
     const base = mediaMatch ? `projects.${mediaMatch[1]}.media.${mediaMatch[2]}` : galleryMatch ? `site.gallery.items.${galleryMatch[1]}` : blockMatch[1];
     const element = [...document.querySelectorAll('[data-edit-path]')].find((item) => item.dataset.editPath === base);
@@ -607,7 +622,8 @@ function updatePreviewValue(path, value) {
       element.className = `gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}${selected}`;
     } else {
       element.style.cssText = `${imageStyle(item)};${blockStyle(item)}`;
-      const classes = `custom-block--align-${safeToken(item.align, 'left')} custom-block--${safeToken(item.format, 'original')}`;
+      const mobileBeforeIntro = base.startsWith('site.customBlocks.home.') && (Number(item.offsetY) < 0 || Number(item.positionY) < 0) ? ' custom-block--mobile-before' : '';
+      const classes = `custom-block--align-${safeToken(item.align, 'left')} custom-block--${safeToken(item.format, 'original')}${mobileBeforeIntro}`;
       const type = item.type === 'image' ? 'image' : item.type === 'quote' ? 'quote' : `text custom-block--${safeToken(item.style, 'body')}`;
       element.className = `custom-block custom-block--${type} ${classes} ${radiusClass(item.radius || 'soft')}${selected}`;
     }

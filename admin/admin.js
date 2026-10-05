@@ -1,5 +1,5 @@
 import '../layout-model.js?v=2';
-const STUDIO_VERSION = '1.6.0';
+const STUDIO_VERSION = '1.6.1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -293,8 +293,10 @@ function choices(label, path, values) {
 function blockControls(basePath) {
   return `<div class="form-section"><h3>Ajouter un bloc</h3><div class="add-blocks"><button data-add-block="text" data-block-base="${basePath}">+ Texte</button><button data-add-block="lead" data-block-base="${basePath}">+ Grand texte</button><button data-add-block="quote" data-block-base="${basePath}">+ Citation</button><button data-add-block="image" data-block-base="${basePath}">+ Image</button><button data-add-block="divider" data-block-base="${basePath}">+ Ligne</button><button data-add-block="spacer" data-block-base="${basePath}">+ Espace</button></div></div>`;
 }
-function responsiveWidthField(path) {
-  return field('Place dans la ligne (ordinateur)', path, 'select', { choices: [['','Automatique'],['12','Pleine ligne'],['8','Deux tiers'],['6','Moitié'],['4','Un tiers · 3 images par ligne']] });
+function responsiveWidthField(path, allowSmallSpans = false) {
+  const choicesList = [['','Automatique'],['12','Pleine ligne'],['8','Deux tiers'],['6','Moitié · 2 images'],['4','Un tiers · 3 images par ligne']];
+  if (allowSmallSpans) choicesList.push(['3','Quart · 4 images par ligne'],['2','Sixième · 6 images par ligne'],['1','Compact · jusqu’à 12 images par ligne']);
+  return field('Place dans la ligne (ordinateur)', path, 'select', { choices: choicesList });
 }
 function layoutPositionFields(base) {
   return `${field('Position horizontale (ordinateur)', `${base}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Déplacement vertical indépendant (ordinateur)', `${base}.positionY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}`;
@@ -372,7 +374,7 @@ function renderGalleryItem(index) {
   const base = `site.gallery.items.${index}`; dom.inspectorTitle.textContent = `Galerie · ${index + 1}`;
   dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
     ${choices('Taille', `${base}.size`, [['small','Petite'],['medium','Moyenne'],['large','Grande']])}${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Trois images peuvent partager une ligne sur ordinateur. Sur téléphone, elles s’empilent et leur texte utilise la largeur disponible.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
+    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager une ligne. Sur téléphone, elles s’empilent naturellement.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
 }
 function renderBlock(path) {
   const block = getPath(path); if (!block) return renderEmpty(); dom.inspectorTitle.textContent = 'Bloc de contenu';

@@ -402,10 +402,24 @@ function projectCard(project, index) {
 function renderProjects(projects) {
   const grid = document.querySelector('#projects-grid'); if (!grid) return;
   grid.innerHTML = projects.filter((project) => project.hidden !== true).map((project) => projectCard(project, projects.indexOf(project))).join('');
-  document.querySelectorAll('.filter').forEach((filter) => filter.addEventListener('click', () => {
-    document.querySelectorAll('.filter').forEach((button) => button.classList.toggle('is-active', button === filter));
-    document.querySelectorAll('.project-card').forEach((card) => card.classList.toggle('is-hidden', filter.dataset.filter !== 'all' && card.dataset.category !== filter.dataset.filter));
-  }));
+  const filters = document.querySelector('.filters');
+  if (!filters) return;
+  const applyFilter = (value) => {
+    filters.querySelectorAll('.filter').forEach((button) => {
+      const active = button.dataset.filter === value;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    grid.querySelectorAll('.project-card').forEach((card) => card.classList.toggle('is-hidden', value !== 'all' && card.dataset.category !== value));
+  };
+  if (!filters.dataset.filterBound) {
+    filters.addEventListener('click', (event) => {
+      const button = event.target.closest('.filter');
+      if (button && filters.contains(button)) applyFilter(button.dataset.filter);
+    });
+    filters.dataset.filterBound = 'true';
+  }
+  applyFilter(filters.querySelector('.filter.is-active')?.dataset.filter || 'all');
 }
 
 function renderProjectPage(projects) {

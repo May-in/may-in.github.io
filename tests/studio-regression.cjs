@@ -108,6 +108,17 @@ const server = http.createServer(async (request, response) => {
     await nextVisit;
     assert.equal(await publicPage.evaluate(() => localStorage.getItem('mayin-anonymous-visit')), null, 'Obsolete visitor ID remained in browser storage');
     assert.ok(visits.length >= 2 && !('sessionId' in visits.at(-1)), 'Analytics still transmitted a browser visitor ID');
+    await publicPage.goto(`http://localhost:${server.address().port}/projets.html`);
+    await publicPage.locator('.project-card').first().waitFor();
+    await publicPage.locator('[data-filter="public"]').click();
+    assert.equal(await publicPage.locator('[data-filter="public"]').getAttribute('aria-pressed'), 'true');
+    await publicPage.evaluate(() => { for (let index = 0; index < 5; index++) renderAll(runtime.site, runtime.projects); });
+    assert.equal(await publicPage.locator('.filter.is-active').getAttribute('data-filter'), 'public', 'Rerender lost the chosen filter');
+    assert.equal(await publicPage.locator('.project-card:not(.is-hidden)').count(), await publicPage.locator('.project-card[data-category="public"]').count(), 'Rerender displayed projects outside the chosen category');
+    await publicPage.locator('[data-filter="prive"]').click();
+    assert.equal(await publicPage.locator('[data-filter="prive"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await publicPage.locator('[data-filter="public"]').getAttribute('aria-pressed'), 'false');
+    assert.equal(await publicPage.locator('.project-card:not(.is-hidden)').count(), await publicPage.locator('.project-card[data-category="prive"]').count());
     console.log('Regression OK: Studio editing, live preview and undo; anonymous analytics without browser identifier.');
   } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
 })().catch((error) => { console.error(error); process.exitCode = 1; server.close(); });

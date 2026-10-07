@@ -1,5 +1,5 @@
-import '../layout-model.js?v=3';
-const STUDIO_VERSION = '1.6.2';
+import '../layout-model.js?v=4';
+const STUDIO_VERSION = '1.7.0';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -211,7 +211,7 @@ function setPreviewMode(mode) {
   previewMode = mode;
   $$('.segmented').forEach((button) => button.classList.toggle('is-active', button.dataset.mode === mode));
   sendPreviewMode();
-  $('#workspace-hint').textContent = mode === 'edit' ? 'Composition ordinateur · adaptation automatique sur tablette et téléphone' : 'Navigation active — utilise les liens normalement';
+  $('#workspace-hint').textContent = mode === 'edit' ? 'Composition adaptable · Reclique pour sélectionner un élément superposé' : 'Navigation active — utilise les liens normalement';
 }
 function navigatePreview(href, pageId) {
   activePage = pageId || activePage; dom.frame.src = href;
@@ -385,6 +385,7 @@ function renderBlock(path) {
   if (block.type === 'image') fields = imageControl(`${path}.src`) + `<div class="form-section"><h3>Texte</h3>${field('Légende', `${path}.caption`, 'textarea')}${field('Description accessible', `${path}.alt`, 'textarea')}</div>` + styleBlockControls(path, block);
   else if (block.type === 'spacer') fields = field('Hauteur', `${path}.height`, 'range', { min:20,max:240,step:10,defaultValue:80,unit:'px' });
   else if (block.type !== 'divider') fields = `<div class="form-section"><h3>Contenu</h3>${field('Texte', `${path}.text`, 'textarea', { rows: 6 })}</div>` + styleBlockControls(path, block);
+  if (path.startsWith('site.customBlocks.home.') && block.type !== 'divider') fields += field('Ordre sur téléphone', `${path}.flowPlacement`, 'select', { choices: [['before','Avant le texte de l’intention'],['after','Après le texte de l’intention']] });
   dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${block.type === 'divider' ? '' : `<div class="form-section"><h3>${encode(block.type)}</h3>${fields}${field('Masquer temporairement', `${path}.hidden`, 'checkbox')}</div>`}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${path}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${path}" data-delta="1">↓ Après</button></div><button class="button" data-duplicate-path="${path}">Dupliquer ce bloc</button><button class="danger-button" data-remove-path="${path}">Supprimer ce bloc</button></div>`;
 }
 function renderDesign() {

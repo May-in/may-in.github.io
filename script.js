@@ -2,14 +2,12 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
-const BUILD_VERSION = '1.6.2';
+const BUILD_VERSION = '1.7.0';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;
 let previewReadySent = false;
 let runtime = { site: null, projects: [] };
-
-document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dynamic.css?v=17"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="manifest" href="site.webmanifest">');
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[character]);
 const getJson = async (path) => { const response = await fetch(path, { cache: 'no-store' }); if (!response.ok) throw new Error('Contenu indisponible'); return response.json(); };
@@ -273,41 +271,65 @@ function bindLayout(element, settings = {}, kind = 'media') {
   element.style.setProperty('--layout-flow-y', boundedSetting(settings.offsetY, -1200, 1200, 0) + 'px');
   queueLayout();
 }
-function layoutBounds(element) {
+function layoutBounds(element, cache) {
   const canvas = element.parentElement.closest('.projects-grid,.project-gallery,.gallery-grid,.custom-blocks,.project-hero,.home-hero__content,.home-intro,.about-page__content,.gallery-empty,.page-heading,.project-copy,.contact-main,.home-close,.footer,.topbar,main');
+  if (cache?.has(canvas)) return cache.get(canvas);
   const viewport = document.documentElement.clientWidth;
-  if (!canvas) return { left:16, right:viewport-16, top:0 };
-  const rect = canvas.getBoundingClientRect();
-  const style = getComputedStyle(canvas);
-  const borderLeft = parseFloat(style.borderLeftWidth) || 0;
-  const borderRight = parseFloat(style.borderRightWidth) || 0;
-  return { left:Math.max(16,rect.left+borderLeft), right:Math.min(viewport-16,rect.right-borderRight), top:rect.top+parseFloat(style.paddingTop) };
+  let bounds = { left:16, right:viewport-16, top:0 };
+  if (canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const style = getComputedStyle(canvas);
+    const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+    const borderRight = parseFloat(style.borderRightWidth) || 0;
+    bounds = { left:Math.max(16,rect.left+borderLeft), right:Math.min(viewport-16,rect.right-borderRight), top:rect.top+parseFloat(style.paddingTop) };
+  }
+  cache?.set(canvas,bounds);
+  return bounds;
 }
 function fitLayout() {
   layoutFrame = 0;
   const elements = [...document.querySelectorAll('[data-layout-item]')];
   const pageHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  // Separate writes from reads; otherwise each element forces the browser to
+  // recalculate geometry left by the previous one.
   elements.forEach(element => {
     element.style.setProperty('--layout-x','0px');
     element.style.setProperty('--layout-y','0px');
-    const bounds = layoutBounds(element);
-    element.style.setProperty('--layout-max',Math.max(0,bounds.right-bounds.left)+'px');
   });
-  // Parents first so that nested text is constrained at its final position.
-  elements.forEach(element => {
-    if (!element.getClientRects().length || compactLayout.matches) return;
-    const settings = layoutSettings.get(element) || {};
-    const bounds = layoutBounds(element);
-    const rect = element.getBoundingClientRect();
-    const [minX,maxX] = MayinModel.axisOffsetRange(rect.left,rect.width,bounds.left,bounds.right);
-    const x = Math.max(minX,Math.min(maxX,boundedSetting(settings.offsetX,-1200,1200,0)));
-    const pageTop = rect.top + scrollY;
-    const minY = 16 - pageTop;
-    const maxY = pageHeight - 16 - (pageTop + rect.height);
-    const y = Math.max(minY, Math.min(maxY, boundedSetting(settings.positionY,-1200,1200,0)));
-    element.style.setProperty('--layout-x',x+'px');
-    element.style.setProperty('--layout-y',y+'px');
-  });
+  const boundsCache = new Map();
+  const maxima = elements.map(element => { const bounds = layoutBounds(element,boundsCache); return Math.max(0,bounds.right-bounds.left)+'px'; });
+  elements.forEach((element,index) => element.style.setProperty('--layout-max',maxima[index]));
+  if (compactLayout.matches) return;
+  // Nested text uses the final position of its parent. Work level by level,
+  // batching every read and then every write within the same level.
+  const levels = new Map();
+  for (const element of elements) {
+    let level = 0, parent = element.parentElement.closest('[data-layout-item]');
+    while (parent) { level++; parent = parent.parentElement.closest('[data-layout-item]'); }
+    if (!levels.has(level)) levels.set(level,[]);
+    levels.get(level).push(element);
+  }
+  for (const level of [...levels.keys()].sort((a,b) => a-b)) {
+    const cache = new Map();
+    const positions = levels.get(level).map(element => {
+      if (!element.getClientRects().length) return null;
+      const settings = layoutSettings.get(element) || {};
+      const bounds = layoutBounds(element,cache);
+      const rect = element.getBoundingClientRect();
+      const [minX,maxX] = MayinModel.axisOffsetRange(rect.left,rect.width,bounds.left,bounds.right);
+      const x = Math.max(minX,Math.min(maxX,boundedSetting(settings.offsetX,-1200,1200,0)));
+      const pageTop = rect.top + scrollY;
+      const minY = 16 - pageTop;
+      const maxY = pageHeight - 16 - (pageTop + rect.height);
+      const y = Math.max(minY,Math.min(maxY,boundedSetting(settings.positionY,-1200,1200,0)));
+      return {x,y};
+    });
+    levels.get(level).forEach((element,index) => {
+      const position = positions[index]; if (!position) return;
+      element.style.setProperty('--layout-x',position.x+'px');
+      element.style.setProperty('--layout-y',position.y+'px');
+    });
+  }
 }
 addEventListener('resize', queueLayout);
 compactLayout.addEventListener('change', () => { applyElementStyles(runtime.site || {}); queueLayout(); });
@@ -481,7 +503,7 @@ function renderBlocks(blocks, basePath, extraClass = '') {
   if (!blocks?.length) return '';
   return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
     const path = `${basePath}.${blocks.indexOf(block)}`;
-    const mobileBeforeIntro = basePath === 'site.customBlocks.home' && (Number(block.offsetY) < 0 || Number(block.positionY) < 0) ? ' custom-block--mobile-before' : '';
+    const mobileBeforeIntro = basePath === 'site.customBlocks.home' && block.flowPlacement === 'before' ? ' custom-block--mobile-before' : '';
     const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}${mobileBeforeIntro}`;
     const style = `${imageStyle(block)};${blockStyle(block)}`;
     if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption></figure>`;
@@ -636,7 +658,7 @@ function updatePreviewValue(path, value) {
       element.className = `gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}${selected}`;
     } else {
       element.style.cssText = `${imageStyle(item)};${blockStyle(item)}`;
-      const mobileBeforeIntro = base.startsWith('site.customBlocks.home.') && (Number(item.offsetY) < 0 || Number(item.positionY) < 0) ? ' custom-block--mobile-before' : '';
+      const mobileBeforeIntro = base.startsWith('site.customBlocks.home.') && item.flowPlacement === 'before' ? ' custom-block--mobile-before' : '';
       const classes = `custom-block--align-${safeToken(item.align, 'left')} custom-block--${safeToken(item.format, 'original')}${mobileBeforeIntro}`;
       const type = item.type === 'image' ? 'image' : item.type === 'quote' ? 'quote' : `text custom-block--${safeToken(item.style, 'body')}`;
       element.className = `custom-block custom-block--${type} ${classes} ${radiusClass(item.radius || 'soft')}${selected}`;
@@ -667,6 +689,7 @@ if (isAdminPreview) {
   let touchStart = null;
   let touchSelectionUntil = 0;
   let selectedPreviewElement = null;
+  let lastSelectionPoint = null;
   const editableAtPoint = (event) => {
     const direct = event.target.closest?.('[data-edit-path]');
     if (direct?.dataset.editInline === 'true') return direct;
@@ -676,10 +699,23 @@ if (isAdminPreview) {
   };
   const selectPreviewElement = (event) => {
     if (!previewEditMode) return;
-    const editable = editableAtPoint(event);
+    const primary = editableAtPoint(event);
+    const candidates = primary ? [primary] : [];
+    const seenPaths = new Set(primary ? [primary.dataset.editPath] : []);
+    for (const node of document.elementsFromPoint(event.clientX, event.clientY)) {
+      const candidate = node.closest?.('[data-edit-path]');
+      if (!candidate || seenPaths.has(candidate.dataset.editPath) ||
+          (primary && (candidate.contains(primary) || primary.contains(candidate)))) continue;
+      candidates.push(candidate); seenPaths.add(candidate.dataset.editPath);
+    }
+    const samePoint = lastSelectionPoint && performance.now() - lastSelectionPoint.time < 1500 &&
+      Math.hypot(event.clientX - lastSelectionPoint.x, event.clientY - lastSelectionPoint.y) < 12;
+    const previousIndex = samePoint ? candidates.indexOf(selectedPreviewElement) : -1;
+    const editable = previousIndex >= 0 && candidates.length > 1 ? candidates[(previousIndex + 1) % candidates.length] : primary;
     if (!editable) return;
+    lastSelectionPoint = { x:event.clientX, y:event.clientY, time:performance.now() };
     const inline = editable.dataset.editInline === 'true';
-    if (!inline || editable.closest('a, button')) { event.preventDefault(); event.stopPropagation(); }
+    if (editable !== primary || !inline || editable.closest('a, button')) { event.preventDefault(); event.stopPropagation(); }
     if (selectedPreviewElement && selectedPreviewElement !== editable) selectedPreviewElement.classList.remove('admin-selected');
     editable.classList.add('admin-selected');
     selectedPreviewElement = editable;

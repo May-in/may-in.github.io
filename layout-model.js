@@ -45,6 +45,13 @@
     });
     const site = data.site || {};
     Object.values(site.customBlocks || {}).forEach(items => identify(items, 'block'));
+    // Older home compositions encoded reading order in a negative visual offset.
+    // Migrate once so future position changes cannot reorder the phone layout.
+    (site.customBlocks?.home || []).forEach(block => {
+      if (block && !['before','after'].includes(block.flowPlacement)) {
+        block.flowPlacement = Number(block.offsetY) < 0 || Number(block.positionY) < 0 ? 'before' : 'after';
+      }
+    });
     identify(site.gallery?.items, 'gallery');
     identify(site.navigation, 'nav');
     identify(site.socialLinks, 'social');

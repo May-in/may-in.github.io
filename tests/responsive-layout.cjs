@@ -30,6 +30,7 @@ const server = http.createServer(async(req,res) => {
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
     for (const url of paths) {
+      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=18"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
       await page.setViewportSize({width:1440,height:900});
       await page.goto(base+'/'+url);
       await page.waitForFunction(()=>runtime.site && document.querySelector('[data-layout-item]'));
@@ -61,6 +62,8 @@ const server = http.createServer(async(req,res) => {
       };
     });
     assert.ok(homeOrder.eyebrow<homeOrder.headline && homeOrder.headline<homeOrder.copy,'Home custom headline is not before the intro text on mobile');
+    await page.evaluate(()=>{updatePreviewValue('site.customBlocks.home.0.offsetY',100);fitLayout();});
+    assert.equal(await page.locator('.home-intro .custom-block--mobile-before').count(),1,'Changing visual position changed mobile reading order');
     const navColors=await page.evaluate(()=>{
       const bar=document.querySelector('.topbar'),nav=document.querySelector('.navigation');
       const link=nav.querySelector('a:not([aria-current])');

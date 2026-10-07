@@ -140,6 +140,9 @@ function upgradeDraftShape(payload, reference = publishedData) {
   if (!payload?.site || !Array.isArray(payload.projects)) return payload;
   const site = payload.site;
   const publicSite = reference?.site || {};
+  // A draft made before the domain migration keeps its content, but must not
+  // publish SEO links back to the former public address.
+  if (site.domain === 'https://may-in.github.io' && publicSite.domain === 'https://may-in.be') site.domain = publicSite.domain;
   // Apply the specifically requested landscape correction to older local drafts too.
   const [draftMajor = 0, draftMinor = 0] = String(site.studioVersion || '0.0').split('.').map(Number);
   if (draftMajor < 1 || (draftMajor === 1 && draftMinor < 5)) {

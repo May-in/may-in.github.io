@@ -10,6 +10,7 @@ const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.js
 (async () => {
   const site = JSON.parse(await fs.readFile(path.join(root, 'content/site.json'), 'utf8'));
   const projects = JSON.parse(await fs.readFile(path.join(root, 'content/projects.json'), 'utf8')).projects;
+  assert.equal(site.domain, 'https://may-in.be', 'Published site domain must match the canonical host');
   const base = site.domain.replace(/\/$/, '');
   const template = await fs.readFile(path.join(root, 'project.html'), 'utf8');
   assert.ok(!/<link[^>]+rel="canonical"/.test(template), 'Generic project template contains a misleading canonical');

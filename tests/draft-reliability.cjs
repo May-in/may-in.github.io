@@ -137,6 +137,15 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     }, {key, published});
     await page.reload(); await ready();
     assert.equal((await stored()).projects.find(p=>p.slug === 'moooi-stand-commercial').media.find(m=>m.src.endsWith('12-maquette-dessus-alpha.webp')).format, 'portrait');
+    await page.evaluate(key => {
+      const draft = JSON.parse(localStorage.getItem(key));
+      draft.site.domain = 'https://may-in.github.io';
+      draft.site.name = 'Preserved draft content';
+      localStorage.setItem(key, JSON.stringify(draft));
+    }, key);
+    await page.reload(); await ready();
+    assert.equal((await stored()).site.domain, 'https://may-in.be', 'Old draft restored the former domain');
+    assert.equal((await stored()).site.name, 'Preserved draft content', 'Domain migration lost draft text');
     assert.deepEqual(errors, []);
     console.log('Draft reliability OK: rapid reload, keyboard/preview save, background save, quota recovery/export on phone, discard timer, concurrent edits, failed/expired/successful publication. No live writes.');
   } finally { await browser.close(); }

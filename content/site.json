@@ -102,7 +102,8 @@
         "textColor": "accent",
         "columnSpan": "8",
         "spacing": 48,
-        "positionY": 25
+        "positionY": 25,
+        "flowPlacement": "before"
       }
     ],
     "projects": [],
@@ -585,23 +586,28 @@
     "text-1dhsm3t": {
       "offsetY": 45,
       "offsetX": -35,
-      "width": 80
+      "width": 80,
+      "positionY": 455
     },
     "text-13vpu05": {
       "offsetY": -495,
-      "offsetX": 105
+      "offsetX": 105,
+      "positionY": 90
     },
     "text-1kwndoz": {
       "offsetY": 90,
-      "offsetX": -35
+      "offsetX": -35,
+      "positionY": -155
     },
     "text-6raoz": {
       "offsetX": 40,
-      "offsetY": 25
+      "offsetY": 25,
+      "positionY": 0
     },
     "text-1pgjy59": {
       "offsetY": 55,
-      "offsetX": -25
+      "offsetX": -25,
+      "positionY": -50
     },
     "text-1q13vrl": {
       "offsetX": 60,
@@ -609,11 +615,13 @@
     },
     "text-1cwp96c": {
       "offsetY": 40,
-      "offsetX": 65
+      "offsetX": 65,
+      "positionY": -105
     },
     "text-14f590w": {
       "offsetX": 85,
-      "offsetY": -415
+      "offsetY": -415,
+      "positionY": -80
     },
     "text-1kn85xq": {
       "offsetY": 50,
@@ -625,20 +633,24 @@
     },
     "text-9ao2uu": {
       "offsetY": -50,
-      "offsetX": -15
+      "offsetX": -15,
+      "positionY": 65
     },
     "text-us21g6": {
       "offsetY": -145,
-      "offsetX": 60
+      "offsetX": 60,
+      "positionY": 105
     },
     "text-1q2j0b": {
       "offsetY": -40,
       "offsetX": -25,
-      "width": 75
+      "width": 75,
+      "positionY": 130
     },
     "text-1lyr4qz": {
       "offsetX": 105,
-      "offsetY": -130
+      "offsetY": -130,
+      "positionY": 155
     },
     "text-oszln3": {
       "offsetY": -50,
@@ -646,7 +658,8 @@
     },
     "text-1b5ajrr": {
       "offsetY": -155,
-      "offsetX": -25
+      "offsetX": -25,
+      "positionY": 40
     },
     "text-86g4dc": {
       "offsetX": 275,

@@ -126,6 +126,35 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await startPublish(); await completePublish(401);
     assert.equal(await page.locator('#studio').isVisible(), true, 'Expired session hid recovery controls');
     assert.equal((await stored()).site.name, 'Newer edit B');
+    // A publication made in another tab/device must not be overwritten by this older draft.
+    published = { site:{ ...published.site, name:'External publication' }, projects:published.projects };
+    pending = null;
+    await page.locator('#publish').click();
+    await page.locator('#publish-conflict:visible').waitFor();
+    assert.equal(pending, null, 'A stale draft reached the publish endpoint');
+    assert.equal((await stored()).site.name, 'Newer edit B', 'Conflict removed the local draft');
+    await page.reload(); await ready();
+    pending = null;
+    await page.locator('#publish').click();
+    await page.locator('#publish-conflict:visible').waitFor();
+    assert.equal(pending, null, 'Reloading an older draft hid the publication conflict');
+    await page.setViewportSize({width:390,height:844});
+    const conflictBox = await page.locator('#publish-conflict').boundingBox();
+    assert.ok(conflictBox.x >= 0 && conflictBox.x + conflictBox.width <= 390, 'Conflict warning overflows phone');
+    const conflictDownload = page.waitForEvent('download');
+    await page.locator('#export-conflict').click();
+    const conflictFile = await conflictDownload;
+    const conflictChunks=[];
+    for await (const chunk of await conflictFile.createReadStream()) conflictChunks.push(chunk);
+    const conflictBackup = JSON.parse(Buffer.concat(conflictChunks).toString());
+    assert.equal(conflictBackup.site.name, 'Newer edit B');
+    assert.match(conflictBackup._publishedFingerprint, /^[a-f0-9]{64}$/);
+    await conflictFile.delete();
+    await page.setViewportSize({width:1440,height:900});
+    await page.locator('#discard-draft').click();
+    assert.equal(await page.locator('#publish-conflict').isVisible(), false, 'Discard kept the conflict warning');
+    await page.locator('[data-panel="settings"]').click();
+    await field.fill('Newer edit B');
     await startPublish(); await completePublish();
     await page.waitForTimeout(650); assert.equal(await stored(), null, 'Successful publication left a stale draft');
     await page.reload(); await ready(); assert.equal(await field.inputValue(), 'Newer edit B');
@@ -146,6 +175,11 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await page.reload(); await ready();
     assert.equal((await stored()).site.domain, 'https://may-in.be', 'Old draft restored the former domain');
     assert.equal((await stored()).site.name, 'Preserved draft content', 'Domain migration lost draft text');
+    pending = null;
+    await page.locator('#publish').click();
+    await page.locator('#publish-conflict:visible').waitFor();
+    assert.equal(pending, null, 'A legacy draft without a known source overwrote newer published content');
+    assert.equal((await stored()).site.name, 'Preserved draft content');
     assert.deepEqual(errors, []);
     console.log('Draft reliability OK: rapid reload, keyboard/preview save, background save, quota recovery/export on phone, discard timer, concurrent edits, failed/expired/successful publication. No live writes.');
   } finally { await browser.close(); }

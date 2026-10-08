@@ -1,5 +1,5 @@
 import '../layout-model.js?v=4';
-const STUDIO_VERSION = '1.7.0';
+const STUDIO_VERSION = '1.7.1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -7,7 +7,7 @@ const dom = {
   frame: $('#preview'), shell: $('#preview-shell'), inspector: $('#inspector'), inspectorTitle: $('#inspector-title'),
   pageList: $('#page-list'), projectList: $('#project-list'), publish: $('#publish'), undo: $('#undo'), redo: $('#redo'),
   saveState: $('#save-state'), toast: $('#toast'), imageInput: $('#image-input'), backupInput: $('#backup-input'), previewPublic: $('#preview-public'),
-  discardDraft: $('#discard-draft'), draftWarning: $('#draft-warning'),
+  discardDraft: $('#discard-draft'), draftWarning: $('#draft-warning'), conflictWarning: $('#publish-conflict'),
   studioVersion: $('#studio-version'),
   leftSidebar: $('.sidebar--left'), rightSidebar: $('.sidebar--right'), mobileContent: $('#mobile-content'), mobileProperties: $('#mobile-properties'), mobileDashboard: $('#mobile-dashboard'),
   accountButton: $('#account-button'), accountMenu: $('#account-menu'), accountAvatar: $('#account-avatar'), accountName: $('#account-name')
@@ -29,6 +29,9 @@ let sessionToken = sessionStorage.getItem('mayin-session') || '';
 let currentUser = null;
 let data = { site: null, projects: [] };
 let publishedData = null;
+let publishedFingerprint = '';
+let draftBaseFingerprint = '';
+const draftBaseKey = 'mayin-studio-draft-base';
 let undoStack = [];
 let redoStack = [];
 let selectedPath = '';
@@ -74,6 +77,11 @@ function showToast(message, error = false) {
   clearTimeout(toastTimer); dom.toast.textContent = message; dom.toast.className = `toast is-visible${error ? ' is-error' : ''}`;
   toastTimer = setTimeout(() => dom.toast.className = 'toast', 3200);
 }
+async function contentFingerprint(value) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ site:value.site, projects:value.projects }));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
 function setSaveState(message) { dom.saveState.textContent = message; }
 function authHeaders(extra = {}) { return sessionToken ? { ...extra, Authorization:`Bearer ${sessionToken}` } : extra; }
 function pushHistory() {
@@ -90,6 +98,7 @@ function flushDraft() {
   try {
     // setItem is atomic: a failed write must leave the preceding draft intact.
     localStorage.setItem('mayin-studio-draft', JSON.stringify(data));
+    if (draftBaseFingerprint) localStorage.setItem(draftBaseKey, draftBaseFingerprint);
     draftDirty = false; dom.draftWarning.hidden = true;
     setSaveState('Brouillon local · non publié');
     return true;
@@ -104,7 +113,7 @@ function saveDraftSoon() {
   saveTimer = setTimeout(flushDraft, 500);
 }
 function exportBackup() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const blob = new Blob([JSON.stringify({ ...data, _publishedFingerprint:draftBaseFingerprint }, null, 2)], { type:'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;
@@ -120,11 +129,12 @@ function redo() { if (!redoStack.length) return; undoStack.push(JSON.stringify(d
 function discardDraft() {
   if (!publishedData) return;
   if (!confirm('Revenir à la dernière version publiée ? Les modifications de ce brouillon seront retirées de cet appareil.')) return;
-  try { localStorage.removeItem('mayin-studio-draft'); }
+  try { localStorage.removeItem('mayin-studio-draft'); localStorage.removeItem(draftBaseKey); }
   catch { showToast('Impossible de retirer le brouillon. Son contenu reste inchangé.', true); return; }
   clearTimeout(saveTimer); saveTimer = 0; draftDirty = false; draftRevision++;
   dom.draftWarning.hidden = true;
   data = clone(publishedData); undoStack = []; redoStack = []; inlineSessionPath = '';
+  draftBaseFingerprint = publishedFingerprint; dom.conflictWarning.hidden = true;
   updateHistoryButtons(); renderAllAdmin(); setSaveState('Version publiée'); showToast('Brouillon retiré : la version publiée est restaurée.');
 }
 
@@ -133,7 +143,7 @@ function normalizeBackup(payload) {
   const site = payload.site;
   const projects = Array.isArray(payload.projects) ? payload.projects : payload.projects?.projects;
   if (!site || typeof site !== 'object' || Array.isArray(site) || !Array.isArray(projects)) throw new Error('La sauvegarde doit contenir le site et la liste des projets.');
-  return { site, projects };
+  return { site, projects, _publishedFingerprint:/^[a-f0-9]{64}$/.test(payload._publishedFingerprint || '') ? payload._publishedFingerprint : '' };
 }
 
 function upgradeDraftShape(payload, reference = publishedData) {
@@ -174,7 +184,8 @@ async function importBackup(file) {
     const restored = normalizeBackup(JSON.parse(await file.text()));
     if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
-    data = upgradeDraftShape(clone(restored));
+    data = upgradeDraftShape({ site:clone(restored.site), projects:clone(restored.projects) });
+    draftBaseFingerprint = restored._publishedFingerprint;
     selectedPath = '';
     selectedStyleId = '';
     inlineSessionPath = '';
@@ -486,14 +497,26 @@ async function publish() {
   if (dom.publish.disabled) return;
   try {
     // Save the local recovery copy before starting a potentially slow request.
-    flushDraft();
+    if (!flushDraft()) return;
     const submittedRevision = draftRevision;
     dom.publish.disabled = true; dom.publish.textContent = 'Publication…'; setSaveState('Publication en cours…');
+    const currentResponse = await fetch(`${apiBase}/api/content`, { cache:'no-store', headers:authHeaders() });
+    if (!currentResponse.ok) throw new Error('Impossible de vérifier la version publiée. Le brouillon est conservé.');
+    const currentFingerprint = await contentFingerprint(await currentResponse.json());
+    if (!draftBaseFingerprint || draftBaseFingerprint !== publishedFingerprint || currentFingerprint !== publishedFingerprint) {
+      dom.conflictWarning.hidden = false;
+      setSaveState('Publication arrêtée · brouillon conservé');
+      showToast('Le site publié a changé ou ce brouillon est ancien. Rien n’a été remplacé.', true);
+      return;
+    }
     const payload = collectPublishData();
     const response = await fetch(`${apiBase}/api/publish`, { method:'POST', headers:authHeaders({ 'Content-Type':'application/json', 'X-Mayin-CSRF':csrf }), body:JSON.stringify({ site:payload.site, projects:{ projects:payload.projects }, files:payload.files, message:'Mise à jour depuis le Studio May’in' }) });
     if (response.status === 401) throw new Error('Session expirée : exporte ton brouillon avant de te reconnecter.');
     const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Publication refusée');
     publishedData = clone({ site:payload.site, projects:payload.projects });
+    publishedFingerprint = await contentFingerprint(publishedData);
+    draftBaseFingerprint = publishedFingerprint;
+    dom.conflictWarning.hidden = true;
     if (draftRevision !== submittedRevision) {
       // The published snapshot is older than the editor. Never replace newer edits.
       draftDirty = true; flushDraft();
@@ -503,7 +526,7 @@ async function publish() {
       data = clone(publishedData); draftDirty = false;
       undoStack = []; redoStack = []; updateHistoryButtons();
       try {
-        localStorage.removeItem('mayin-studio-draft');
+        localStorage.removeItem('mayin-studio-draft'); localStorage.removeItem(draftBaseKey);
         dom.draftWarning.hidden = true; setSaveState('Publié');
       } catch {
         // Keep a recoverable current copy if removing the old local draft is blocked.
@@ -529,12 +552,12 @@ async function boot() {
     const fragment = new URLSearchParams(location.hash.slice(1));
     if (fragment.has('session')) { sessionToken = fragment.get('session'); sessionStorage.setItem('mayin-session', sessionToken); history.replaceState(null, '', location.pathname + location.search); }
     const publicData = await loadPublicData();
-    if (localMode) { data = publicData; publishedData = clone(publicData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
+    if (localMode) { data = publicData; publishedData = clone(publicData); publishedFingerprint = await contentFingerprint(publishedData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? localStorage.getItem(draftBaseKey) || '' : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
     if (!apiBase || apiBase.includes('REMPLACER')) return showLogin();
     const auth = await fetch(`${apiBase}/auth/me`, { headers:authHeaders() }); if (!auth.ok) return showLogin();
     const account = await auth.json(); currentUser = account.user; csrf = account.csrf;
     const response = await fetch(`${apiBase}/api/content`, { headers:authHeaders() }); if (!response.ok) throw new Error('Contenu inaccessible');
-    data = await response.json(); publishedData = clone(data); const draft = localStorage.getItem('mayin-studio-draft'); if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
+    data = await response.json(); publishedData = clone(data); publishedFingerprint = await contentFingerprint(publishedData); const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? localStorage.getItem(draftBaseKey) || '' : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
     showStudio();
   } catch (error) { console.error(error); showLogin(); showToast('Le service d’administration n’est pas encore disponible', true); }
 }
@@ -557,6 +580,7 @@ dom.loginButton.addEventListener('click', () => { if (!apiBase || apiBase.includ
 dom.publish.addEventListener('click', publish); dom.undo.addEventListener('click', undo); dom.redo.addEventListener('click', redo);
 dom.discardDraft.addEventListener('click', discardDraft);
 $('#export-unsaved').addEventListener('click', exportBackup);
+$('#export-conflict').addEventListener('click', exportBackup);
 $('#retry-save').addEventListener('click', flushDraft);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDraft(); });
 addEventListener('pagehide', flushDraft);

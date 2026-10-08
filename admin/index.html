@@ -32,7 +32,7 @@
 
   <div class="studio" id="studio" hidden>
     <header class="studio-topbar">
-      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.7.0</span></small></div></div>
+      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.7.1</span></small></div></div>
       <div class="studio-mode" role="group" aria-label="Mode de la prévisualisation">
         <button class="segmented is-active" data-mode="edit" title="Cliquer sur un élément pour le modifier">✎ Modifier</button>
         <button class="segmented" data-mode="navigate" title="Utiliser les liens du site">↗ Naviguer</button>
@@ -79,6 +79,11 @@
         <span>Le stockage est plein ou bloqué. Garde le Studio ouvert et télécharge une sauvegarde pour protéger tes dernières modifications.</span>
         <div><button id="export-unsaved" class="button" type="button">Télécharger une sauvegarde</button> <button id="retry-save" class="button" type="button">Réessayer</button></div>
       </div>
+      <div id="publish-conflict" class="draft-warning" role="alert" hidden>
+        <strong>Publication arrêtée pour protéger le site.</strong>
+        <span>Le contenu publié a changé depuis l’ouverture de ce brouillon, ou son origine est inconnue. Ton brouillon est conservé ici et rien n’a été remplacé. Télécharge une sauvegarde avant de comparer les deux versions.</span>
+        <div><button id="export-conflict" class="button" type="button">Télécharger mon brouillon</button></div>
+      </div>
       <div class="workspace__canvas" id="canvas">
         <div class="preview-shell preview-shell--desktop" id="preview-shell">
           <iframe id="preview" title="Prévisualisation du site" src="../index.html?admin-preview=1"></iframe>
@@ -98,6 +103,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden />
   <input id="backup-input" type="file" accept="application/json,.json" hidden />
-  <script src="admin.js?v=24" type="module"></script>
+  <script src="admin.js?v=25" type="module"></script>
 </body>
 </html>

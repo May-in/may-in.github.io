@@ -2,7 +2,7 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
-const BUILD_VERSION = '1.7.0';
+const BUILD_VERSION = '1.8.0';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;

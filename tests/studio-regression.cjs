@@ -66,12 +66,27 @@ const server = http.createServer(async (request, response) => {
     await page.waitForTimeout(150);
     assert.equal(await text.textContent(), initial, 'Undo did not restore the edited text');
 
+    // Editorial blocks must obey the same typography control as ordinary text.
+    const headline = frame.locator('[data-edit-path="site.customBlocks.home.0.text"]');
+    await headline.click({ force:true });
+    const headlineSize = page.locator('#inspector [data-path="site.customBlocks.home.0.fontSize"]');
+    await headlineSize.waitFor();
+    const headlineBefore = await headline.evaluate(element => getComputedStyle(element).fontSize);
+    await headlineSize.fill('72');
+    await page.waitForTimeout(120);
+    assert.equal(await headline.evaluate(element => getComputedStyle(element).fontSize), '72px', 'Editorial block size is masked by a broader paragraph rule');
+    assert.notEqual(headlineBefore, '72px');
+    await page.locator('#undo').click();
+
     const wordmark = frame.locator('.wordmark [data-edit-path="site.name"]');
     await wordmark.click();
     await page.locator('#inspector [data-path="site.name"]').waitFor();
     await page.locator('#inspector [data-path="site.name"]').fill('May’in TEST');
     await page.waitForTimeout(100);
     assert.equal(await wordmark.textContent(), 'May’in TEST', 'Site name was not previewed live');
+    await frame.locator('.navigation [data-edit-path="site.navigation.0.label"]').click();
+    await page.locator('#inspector [data-path="site.navigation.0.label"]').waitFor();
+    assert.equal(await page.locator('#inspector [data-path$=".width"]').count(), 0, 'Navigation still offers a width control that splits short labels');
 
     await page.locator('#project-list [data-project-index="0"]').first().click();
     const projectTitle = frame.locator('[data-edit-path="projects.0.title"]');
@@ -94,6 +109,29 @@ const server = http.createServer(async (request, response) => {
     await page.waitForTimeout(100);
     const coverAfter = await cover.evaluate((element) => getComputedStyle(element).borderTopLeftRadius);
     assert.notEqual(coverAfter, coverBefore, 'Cover corners were not previewed live');
+    await page.locator('#page-list [data-page="gallery"]').click();
+    await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
+    await page.locator('#inspector [data-select-path="site.customBlocks.gallery.3"]').click();
+    const arrangement = page.locator('#inspector [data-arrange-images="site.customBlocks.gallery"][data-columns="4"]');
+    await arrangement.waitFor();
+    const previousGallery = await frame.locator('body').evaluate(() => JSON.stringify(runtime.site.customBlocks.gallery));
+    await arrangement.click();
+    await page.waitForFunction(() => {
+      const images=[...document.querySelector('#preview').contentDocument.querySelectorAll('[data-custom-blocks="gallery"] .custom-block')];
+      return images.length === 4 && images.every(image => image.style.getPropertyValue('--block-span') === '3');
+    });
+    await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
+    const imageRows = await frame.locator('[data-custom-blocks="gallery"] .custom-block').evaluateAll(items => items.map(item => Math.round(item.getBoundingClientRect().top)));
+    assert.equal(new Set(imageRows).size, 1, 'Four editorial gallery images did not share one grid row');
+    await page.locator('#page-list [data-page="gallery"]').click();
+    await page.locator('#inspector [data-add-block="image"][data-block-base="site.customBlocks.gallery"]').click();
+    await page.locator('#image-input').setInputFiles(path.join(root, 'favicon.png'));
+    await page.waitForFunction(() => document.querySelector('#preview').contentDocument.querySelectorAll('[data-custom-blocks="gallery"] .custom-block--image').length === 5);
+    assert.equal(await frame.locator('[data-custom-blocks="gallery"] .custom-block--image').last().evaluate(item => item.style.getPropertyValue('--block-span')), '3', 'A new image did not inherit the section’s four-column layout');
+    await page.locator('#undo').click();
+    await page.locator('#undo').click();
+    await page.waitForTimeout(200);
+    assert.equal(await frame.locator('body').evaluate(() => JSON.stringify(runtime.site.customBlocks.gallery)), previousGallery, 'Arranging images could not be undone');
     assert.ok(!errors.length, `Browser errors: ${errors.join('; ')}`);
     const publicPage = await browser.newPage();
     const visits = [];

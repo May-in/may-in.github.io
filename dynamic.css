@@ -44,7 +44,9 @@
 .footer [data-social-links] span,.contact-details [data-social-links] span{opacity:.45}
 [hidden]{display:none!important}
 main,section,figure,.project-card,.project-title-row,.project-meta,.footer-bottom>*{min-width:0}
-[data-edit-inline]{overflow-wrap:anywhere}
+[data-edit-inline]{overflow-wrap:break-word}
+.navigation a[data-edit-inline]{width:max-content!important;max-width:none!important;white-space:nowrap;overflow-wrap:normal;min-width:max-content;flex:none}
+@media(max-width:760px){.navigation a[data-edit-inline]{width:100%!important;max-width:100%!important;min-width:0;white-space:normal}}
 .projects-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
 .project-card--custom-size{grid-column:span var(--card-span,12)!important;justify-self:var(--card-align,start)}
 .project-cover-group{width:100%;min-width:0}

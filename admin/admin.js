@@ -1,5 +1,5 @@
 import '../layout-model.js?v=4';
-const STUDIO_VERSION = '1.7.1';
+const STUDIO_VERSION = '1.8.0';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -312,6 +312,16 @@ function responsiveWidthField(path, allowSmallSpans = false) {
   if (allowSmallSpans) choicesList.push(['3','Quart · 4 images par ligne'],['2','Sixième · 6 images par ligne'],['1','Compact · jusqu’à 12 images par ligne']);
   return field('Place dans la ligne (ordinateur)', path, 'select', { choices: choicesList });
 }
+function imageArrangementControls(listPath) {
+  const images = getPath(listPath)?.filter(item => item && (item.type === 'image' || item.src)) || [];
+  if (images.length < 2) return '';
+  return `<div class="form-section"><h3>Composer la ligne</h3><p class="form-note">Répartit les ${images.length} images de cette section dans la grille, sans changer leur ordre ni leur contenu. Les anciens décalages sont remis à zéro ; Annuler permet de retrouver la composition précédente.</p><div class="field-row">${[2,3,4,6].map(count => `<button class="button" type="button" data-arrange-images="${listPath}" data-columns="${count}">${count} par ligne</button>`).join('')}</div></div>`;
+}
+function nextImageSpan(items, fallback) {
+  const previous = [...items].reverse().find(item => item && (item.type === 'image' || item.src));
+  const span = Number(previous?.columnSpan);
+  return Number.isInteger(span) && span >= 1 && span <= 12 ? span : fallback;
+}
 function layoutPositionFields(base) {
   return `${field('Position horizontale (ordinateur)', `${base}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Déplacement vertical indépendant (ordinateur)', `${base}.positionY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}`;
 }
@@ -328,17 +338,18 @@ function contentOutline(basePath, items = [], title = 'Ordre') {
 }
 function styleBlockControls(path, block) {
   const isImage = block.type === 'image';
-  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(path)}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">Le déplacement vertical agit sur cet élément seul. Sur téléphone, les éléments s’empilent et les textes retrouvent la largeur disponible.</p></div>`;
+  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`, isImage)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(path)}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La place dans la ligne organise les images ; le déplacement règle seulement leur position fine. Sur téléphone, les éléments s’empilent.</p></div>`;
   if (isImage) return positioning + choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']]);
   return `${positioning}<div class="form-section"><h3>Texte</h3>${field('Alignement', `${path}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Police', `${path}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${path}.fontSize`, 'range', { min:14, max:96, step:1, defaultValue:block.style === 'lead' ? 48 : 18, unit:'px' })}${field('Couleur du texte', `${path}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${path}.color`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Zone colorée</h3>${field('Fond', `${path}.surface`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur personnalisée', `${path}.background`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${path}.padding`, 'range', { min:0, max:120, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${path}.minHeight`, 'range', { min:0, max:520, step:10, defaultValue:0, unit:'px' })}</div>${choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}`;
 }
 
-function elementStyleControls(styleId) {
+function elementStyleControls(styleId, intrinsicWidth = false) {
   if (!styleId) return '';
   const base = `site.elementStyles.${styleId}`;
+  const widthControl = intrinsicWidth ? '<p class="form-note">La largeur du lien suit automatiquement son libellé pour éviter les mots coupés.</p>' : field('Largeur', `${base}.width`, 'range', { min:20, max:200, step:5, defaultValue:100 });
   const peerIndex = selectedLayoutPeers.findIndex(peer => peer.styleId === styleId);
   const orderControls = peerIndex >= 0 && selectedLayoutPeers.length > 1 ? `<div class="form-section"><h3>Ordre dans cette zone</h3><p class="form-note">Les flèches réorganisent les éléments voisins. Les réglages de position déplacent seulement l’élément sélectionné.</p><div class="field-row"><button class="button" data-order-delta="-1" ${peerIndex === 0 ? 'disabled' : ''}>↑ Avant</button><button class="button" data-order-delta="1" ${peerIndex === selectedLayoutPeers.length - 1 ? 'disabled' : ''}>↓ Après</button></div></div>` : '';
-  return `<div class="form-section"><h3>Texte</h3>${field('Police', `${base}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${base}.fontSize`, 'range', { min:10, max:160, step:1, defaultValue:18, unit:'px' })}${field('Alignement', `${base}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Couleur', `${base}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${base}.customColor`, 'color', { defaultValue:'#2a1718' })}</div>${orderControls}<div class="form-section"><h3>Position et zone</h3>${field('Largeur', `${base}.width`, 'range', { min:20, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${base}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(base)}${field('Fond', `${base}.background`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur du fond', `${base}.backgroundColor`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${base}.padding`, 'range', { min:0, max:160, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${base}.minHeight`, 'range', { min:0, max:720, step:10, defaultValue:0, unit:'px' })}${field('Arrondi', `${base}.radius`, 'range', { min:0, max:100, step:2, defaultValue:0, unit:'px' })}${field('Masquer cet élément', `${base}.hidden`, 'checkbox')}</div>`;
+return `<div class="form-section"><h3>Texte</h3>${field('Police', `${base}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${base}.fontSize`, 'range', { min:10, max:160, step:1, defaultValue:18, unit:'px' })}${field('Alignement', `${base}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Couleur', `${base}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${base}.customColor`, 'color', { defaultValue:'#2a1718' })}</div>${orderControls}<div class="form-section"><h3>Position et zone</h3>${widthControl}${field('Placement horizontal', `${base}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(base)}${field('Fond', `${base}.background`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur du fond', `${base}.backgroundColor`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${base}.padding`, 'range', { min:0, max:160, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${base}.minHeight`, 'range', { min:0, max:720, step:10, defaultValue:0, unit:'px' })}${field('Arrondi', `${base}.radius`, 'range', { min:0, max:100, step:2, defaultValue:0, unit:'px' })}${field('Masquer cet élément', `${base}.hidden`, 'checkbox')}</div>`;
 }
 function renderSiteField(path, label) {
   const value = getPath(path);
@@ -350,7 +361,7 @@ function renderLinkItem(path) {
   const item = getPath(path); if (!item) return renderEmpty();
   const social = path.startsWith('site.socialLinks.');
   dom.inspectorTitle.textContent = social ? 'Lien externe' : 'Lien du menu';
-  dom.inspector.innerHTML = `<div class="form-section"><h3>${social ? 'Réseau ou lien' : 'Navigation'}</h3>${field('Libellé', `${path}.label`)}${field('Adresse', `${path}.${social ? 'url' : 'href'}`)}${field('Afficher ce lien', `${path}.visible`, 'checkbox')}</div>${elementStyleControls(selectedStyleId)}<button class="danger-button" data-remove-path="${path}">Supprimer ce lien</button>`;
+  dom.inspector.innerHTML = `<div class="form-section"><h3>${social ? 'Réseau ou lien' : 'Navigation'}</h3>${field('Libellé', `${path}.label`)}${field('Adresse', `${path}.${social ? 'url' : 'href'}`)}${field('Afficher ce lien', `${path}.visible`, 'checkbox')}</div>${elementStyleControls(selectedStyleId, !social)}<button class="danger-button" data-remove-path="${path}">Supprimer ce lien</button>`;
 }
 function renderProject(index) {
   const project = data.projects[index]; if (!project) return renderEmpty();
@@ -382,13 +393,13 @@ function renderMedia(projectIndex, mediaIndex) {
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
     ${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
     <div class="form-section"><h3>Dimensions et cadrage</h3>${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager la ligne. Sur téléphone, elles s’empilent et les légendes prennent la largeur disponible.</p></div>
-    <div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer cette image</button></div>`;
+    <div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer cette image</button></div>${imageArrangementControls(`projects.${projectIndex}.media`)}`;
 }
 function renderGalleryItem(index) {
   const base = `site.gallery.items.${index}`; dom.inspectorTitle.textContent = `Galerie · ${index + 1}`;
   dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
     ${choices('Taille', `${base}.size`, [['small','Petite'],['medium','Moyenne'],['large','Grande']])}${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager une ligne. Sur téléphone, elles s’empilent naturellement.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>`;
+    <div class="form-section">${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager une ligne. Sur téléphone, elles s’empilent naturellement.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>${imageArrangementControls('site.gallery.items')}`;
 }
 function renderBlock(path) {
   const block = getPath(path); if (!block) return renderEmpty(); dom.inspectorTitle.textContent = 'Bloc de contenu';
@@ -398,6 +409,7 @@ function renderBlock(path) {
   else if (block.type !== 'divider') fields = `<div class="form-section"><h3>Contenu</h3>${field('Texte', `${path}.text`, 'textarea', { rows: 6 })}</div>` + styleBlockControls(path, block);
   if (path.startsWith('site.customBlocks.home.') && block.type !== 'divider') fields += field('Ordre sur téléphone', `${path}.flowPlacement`, 'select', { choices: [['before','Avant le texte de l’intention'],['after','Après le texte de l’intention']] });
   dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${block.type === 'divider' ? '' : `<div class="form-section"><h3>${encode(block.type)}</h3>${fields}${field('Masquer temporairement', `${path}.hidden`, 'checkbox')}</div>`}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="${path}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${path}" data-delta="1">↓ Après</button></div><button class="button" data-duplicate-path="${path}">Dupliquer ce bloc</button><button class="danger-button" data-remove-path="${path}">Supprimer ce bloc</button></div>`;
+  if (block.type === 'image') dom.inspector.insertAdjacentHTML('beforeend', imageArrangementControls(path.slice(0, path.lastIndexOf('.'))));
 }
 function renderDesign() {
   dom.inspectorTitle.textContent = 'Design & palettes'; const design = data.site.design;
@@ -472,9 +484,9 @@ async function handleUpload(file) {
   try {
     setSaveState('Optimisation image…'); const dataUrl = await compressImage(file); pushHistory();
     if (uploadTarget.type === 'path') setPath(uploadTarget.path, dataUrl);
-    if (uploadTarget.type === 'project-media') { const media = data.projects[uploadTarget.index].media ||= []; media.push({ src:dataUrl, alt:'', caption:'', kind:'wide', format:'landscape', align:'center', radius:'soft', width:100, columnSpan:'' }); selectedPath = `projects.${uploadTarget.index}.media.${media.length-1}`; }
-    if (uploadTarget.type === 'gallery') { data.site.gallery.items.push({ src:dataUrl, alt:'', caption:'', credit:'', category:data.site.gallery.categories[0] || 'Galerie', size:'medium', radius:'soft', width:100, columnSpan:'' }); selectedPath = `site.gallery.items.${data.site.gallery.items.length-1}`; }
-    if (uploadTarget.type === 'block-image') { if (!Array.isArray(getPath(uploadTarget.base))) setPath(uploadTarget.base, []); const blocks = getPath(uploadTarget.base); blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100, columnSpan:12 }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
+    if (uploadTarget.type === 'project-media') { const media = data.projects[uploadTarget.index].media ||= []; media.push({ src:dataUrl, alt:'', caption:'', kind:'wide', format:'landscape', align:'center', radius:'soft', width:100, columnSpan:nextImageSpan(media,'') }); selectedPath = `projects.${uploadTarget.index}.media.${media.length-1}`; }
+    if (uploadTarget.type === 'gallery') { const items = data.site.gallery.items; items.push({ src:dataUrl, alt:'', caption:'', credit:'', category:data.site.gallery.categories[0] || 'Galerie', size:'medium', radius:'soft', width:100, columnSpan:nextImageSpan(items,'') }); selectedPath = `site.gallery.items.${items.length-1}`; }
+    if (uploadTarget.type === 'block-image') { if (!Array.isArray(getPath(uploadTarget.base))) setPath(uploadTarget.base, []); const blocks = getPath(uploadTarget.base); blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100, columnSpan:nextImageSpan(blocks,12) }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
     uploadTarget = null; markChanged(); showToast('Image optimisée et ajoutée');
   } catch (error) { showToast(error.message || 'Impossible de traiter cette image', true); setSaveState('Erreur'); }
 }
@@ -640,6 +652,16 @@ dom.inspector.addEventListener('change', (event) => {
   if (/^projects\.\d+\.(title|description)$/.test(input.dataset.path)) renderProjectList();
 });
 dom.inspector.addEventListener('click', (event) => {
+  const arrangement=event.target.closest('[data-arrange-images]');
+  if(arrangement){
+    const list=getPath(arrangement.dataset.arrangeImages), columns=Number(arrangement.dataset.columns);
+    if(!Array.isArray(list)||![2,3,4,6].includes(columns))return;
+    pushHistory();
+    list.filter(item=>item&&(item.type==='image'||item.src)).forEach(item=>{
+      item.columnSpan=12/columns;item.width=100;item.offsetX=0;item.offsetY=0;item.positionY=0;
+    });
+    markChanged();return;
+  }
   const order=event.target.closest('[data-order-delta]'); if(order){moveLayoutPeer(Number(order.dataset.orderDelta));return;}
   const upload=event.target.closest('[data-upload-path]'); if(upload)return startUpload({type:'path',path:upload.dataset.uploadPath});
   const choice=event.target.closest('[data-choice-path]'); if(choice){mutate(choice.dataset.choicePath,choice.dataset.choiceValue);return;}

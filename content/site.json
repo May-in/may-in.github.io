@@ -997,7 +997,7 @@
       "textColor": "accent"
     }
   },
-  "studioVersion": "1.7.1",
+  "studioVersion": "1.8.0",
   "styleMigrations": {
     "page-home": true,
     "page-projects": true,

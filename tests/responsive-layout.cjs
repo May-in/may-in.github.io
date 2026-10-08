@@ -30,7 +30,7 @@ const server = http.createServer(async(req,res) => {
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
     for (const url of paths) {
-      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=18"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
+      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=19"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
       await page.setViewportSize({width:1440,height:900});
       await page.goto(base+'/'+url);
       await page.waitForFunction(()=>runtime.site && document.querySelector('[data-layout-item]'));
@@ -74,6 +74,16 @@ const server = http.createServer(async(req,res) => {
     });
     assert.notEqual(navColors.hero,navColors.scrolled,'Home navigation color does not adapt after scrolling');
     assert.equal(navColors.open,navColors.ink,'Mobile menu text is not dark on its light panel');
+    await page.setViewportSize({width:844,height:900});
+    const navWord = await page.evaluate(() => {
+      const link=document.querySelector('.navigation a');
+      link.style.setProperty('--layout-width','20%'); fitLayout();
+      const style=getComputedStyle(link), rect=link.getBoundingClientRect(), range=document.createRange();
+      range.selectNodeContents(link);
+      return {whiteSpace:style.whiteSpace, lines:range.getClientRects().length, right:rect.right};
+    });
+    assert.equal(navWord.whiteSpace,'nowrap','Navigation label can split inside a word');
+    assert.ok(navWord.lines === 1 && navWord.right <= 844,'Navigation label wraps or overflows after narrowing its control');
 
     // The gallery can use narrower desktop spans while remaining a one-column mobile layout.
     await page.goto(base+'/galerie.html');
@@ -89,6 +99,19 @@ const server = http.createServer(async(req,res) => {
     await page.evaluate(()=>fitLayout());
     const mobileRows=await page.locator('.gallery-grid .gallery-item').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right}}));
     mobileRows.forEach((row,index)=>{assert.ok(row.left>=0&&row.right<=390,'Gallery image overflows mobile');if(index)assert.ok(row.top>mobileRows[index-1].top,'Gallery images did not stack on mobile');});
+
+    // The same grid contract applies to editorial image blocks, which hold the published gallery images.
+    await page.setViewportSize({width:1440,height:900});
+    await page.evaluate(()=>{
+      runtime.site.customBlocks.gallery.filter(item=>item.type==='image').forEach(item=>{item.columnSpan=3;item.width=100;item.offsetX=0;item.offsetY=0;item.positionY=0;});
+      renderAll(runtime.site,runtime.projects);fitLayout();
+    });
+    const editorialDesktop=await page.locator('[data-custom-blocks="gallery"] .custom-block--image').evaluateAll(items=>items.map(item=>Math.round(item.getBoundingClientRect().top)));
+    assert.equal(new Set(editorialDesktop).size,1,'Four editorial gallery images do not share one desktop row');
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(()=>fitLayout());
+    const editorialMobile=await page.locator('[data-custom-blocks="gallery"] .custom-block--image').evaluateAll(items=>items.map(item=>{const rect=item.getBoundingClientRect();return {top:rect.top,left:rect.left,right:rect.right}}));
+    editorialMobile.forEach((item,index)=>{assert.ok(item.left>=0&&item.right<=390,'Editorial image overflows mobile');if(index)assert.ok(item.top>editorialMobile[index-1].top,'Editorial images did not stack on mobile');});
 
     // Project galleries use the same narrow-column grid and remain stacked on mobile.
     await page.goto(base+'/project.html?slug='+encodeURIComponent(projects[0].slug));

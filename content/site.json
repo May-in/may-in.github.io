@@ -176,7 +176,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": 3
+        "columnSpan": 3,
+        "id": "block-1wwq0y6"
       },
       {
         "type": "image",
@@ -185,7 +186,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": "6"
+        "columnSpan": "6",
+        "id": "block-t5t0qu"
       },
       {
         "type": "image",
@@ -194,7 +196,35 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
+        "columnSpan": 6,
+        "id": "block-t5ezdb"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791549701176-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "pill",
+        "width": 45,
         "columnSpan": 6
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791549701177-2-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "pill",
+        "width": 100,
+        "columnSpan": 3
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791549701178-3-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "all",
+        "width": 100,
+        "columnSpan": "6"
       },
       {
         "width": 100,
@@ -210,7 +240,24 @@
         "minHeight": 0,
         "radius": "soft",
         "type": "spacer",
-        "height": 240
+        "height": 240,
+        "id": "block-gxt2yv"
+      },
+      {
+        "width": 100,
+        "columnSpan": 12,
+        "align": "left",
+        "spacing": 36,
+        "textAlign": "left",
+        "fontFamily": "sans",
+        "fontSize": 18,
+        "textColor": "inherit",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "soft",
+        "type": "spacer",
+        "height": 210
       }
     ],
     "about": [
@@ -664,11 +711,12 @@
     "text-1pgjy59": {
       "offsetY": 55,
       "offsetX": -25,
-      "positionY": -50
+      "positionY": -25
     },
     "text-1q13vrl": {
       "offsetX": 60,
-      "offsetY": -35
+      "offsetY": -35,
+      "positionY": 25
     },
     "text-1cwp96c": {
       "offsetY": 40,
@@ -691,12 +739,12 @@
     "text-9ao2uu": {
       "offsetY": -50,
       "offsetX": -15,
-      "positionY": 65
+      "positionY": 105
     },
     "text-us21g6": {
       "offsetY": -145,
       "offsetX": 60,
-      "positionY": 105
+      "positionY": 40
     },
     "text-1q2j0b": {
       "offsetY": -40,
@@ -711,7 +759,8 @@
     },
     "text-oszln3": {
       "offsetY": -50,
-      "offsetX": -65
+      "offsetX": -65,
+      "positionY": 105
     },
     "text-1b5ajrr": {
       "offsetY": -155,
@@ -821,12 +870,16 @@
     },
     "text-14kq6n5": {
       "offsetY": -220,
-      "textColor": "accent"
+      "textColor": "accent",
+      "width": 70,
+      "fontSize": 50,
+      "offsetX": 260
     },
     "text-d6neu0": {
-      "width": 95,
+      "width": 90,
       "offsetY": -15,
-      "offsetX": -50
+      "offsetX": 170,
+      "positionY": 15
     },
     "text-x6r2jn": {
       "offsetX": 550,
@@ -1056,9 +1109,12 @@
     },
     "text-1u6038f": {
       "positionY": 80
+    },
+    "text-16w87v": {
+      "positionY": -15
     }
   },
-  "studioVersion": "1.9.1",
+  "studioVersion": "1.9.2",
   "styleMigrations": {
     "page-home": true,
     "page-projects": true,

@@ -612,7 +612,8 @@
       "id": "project-km08hm",
       "heroPresentation": {
         "radius": "soft"
-      }
+      },
+      "positionY": -50
     },
     {
       "slug": "scenographie-minimaliste",
@@ -690,7 +691,7 @@
         }
       ],
       "coverKind": "cutout",
-      "width": 185,
+      "width": 170,
       "offsetY": 25,
       "blocks": [],
       "heroBlocks": [],
@@ -698,8 +699,10 @@
       "id": "project-q9he67",
       "positionY": -115,
       "heroPresentation": {
-        "radius": "soft"
-      }
+        "radius": "soft",
+        "width": 100
+      },
+      "hidden": false
     }
   ]
 }

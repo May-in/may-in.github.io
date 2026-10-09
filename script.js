@@ -210,6 +210,12 @@ function imageStyle(item = {}) {
   const span = Number.isInteger(requestedSpan) && requestedSpan >= 1 && requestedSpan <= 12 ? requestedSpan : item.kind === 'detail' || item.size === 'small' ? 4 : item.kind === 'process' || item.size === 'medium' ? 6 : 8;
   return `--media-width:${width}%;--media-position:${position.replace('-', ' ')};--media-offset-x:${offsetX}px;--media-offset-y:${offsetY}px;--media-span:${span}`;
 }
+// Gallery width becomes real track occupancy, never a translated full-width row.
+function galleryBlockStyle(block = {}) { return `--gallery-span:${MayinModel.galleryTrackSpan(block)}`; }
+function galleryItemStyle(item = {}) {
+  const defaultSpan = item.size === 'small' ? 4 : item.size === 'medium' ? 6 : 8;
+  return `${imageStyle(item)};--media-span:${MayinModel.galleryTrackSpan(item, defaultSpan)}`;
+}
 function mediaGridClass(item = {}) { const span = Number(item.columnSpan); return Number.isInteger(span) && span >= 1 && span <= 12 ? ' media-grid--custom' : ''; }
 function projectCardStyle(project = {}) {
   const span = [4, 6, 8, 10, 12].includes(Number(project.cardSpan)) ? Number(project.cardSpan) : 12;
@@ -337,6 +343,9 @@ document.addEventListener('load', event => { if (event.target.tagName === 'IMG' 
 document.fonts?.ready.then(queueLayout);
 function bindContentLayout() {
   document.querySelectorAll('.project-cover-group,.project-hero__visual,.project-media,.gallery-item,.custom-block').forEach(element => {
+    // Gallery items occupy real rows/columns. Pixel translations leave empty
+    // source rows behind and make the next image impossible to lift into them.
+    if (element.matches('.gallery-item') || element.closest('[data-custom-blocks="gallery"]')) return;
     const path = element.dataset.layoutPath || element.dataset.editPath;
     const item = path?.split('.').reduce((value,part) => value?.[part],runtime);
     if (item && typeof item === 'object') bindLayout(element,item);
@@ -495,18 +504,20 @@ function renderProjectPage(projects) {
 function renderGallery(site) {
   const grid = document.querySelector('#gallery-grid'); if (!grid) return;
   const items = site.gallery?.items || [];
-  document.querySelector('.gallery-empty')?.classList.toggle('gallery-empty--with-items', items.length > 0);
-  grid.innerHTML = items.map((item, index) => `<figure class="gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}" data-edit-path="site.gallery.items.${index}" data-edit-label="Image de galerie" style="${imageStyle(item)}"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || item.caption || '')}" loading="lazy" /><figcaption><span>${escapeHtml(item.category || '')}</span><span data-edit-path="site.gallery.items.${index}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</span>${item.credit ? `<small>${escapeHtml(item.credit)}</small>` : ''}</figcaption></figure>`).join('');
+  const hasImages = items.length > 0 || site.customBlocks?.gallery?.some(block => block?.type === 'image' && block.hidden !== true);
+  document.querySelector('.gallery-empty')?.classList.toggle('gallery-empty--with-items', !!hasImages);
+  grid.innerHTML = items.map((item, index) => `<figure class="gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}" data-edit-path="site.gallery.items.${index}" data-edit-label="Image de galerie" style="${galleryItemStyle(item)}"><img src="${assetSrc(item.src)}" alt="${escapeHtml(item.alt || item.caption || '')}" loading="lazy" /><figcaption><span>${escapeHtml(item.category || '')}</span><span data-edit-path="site.gallery.items.${index}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(item.caption || '')}</span>${item.credit ? `<small>${escapeHtml(item.credit)}</small>` : ''}</figcaption></figure>`).join('');
 }
 
 function renderBlocks(blocks, basePath, extraClass = '') {
   if (!blocks?.length) return '';
-  return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
+  const gallery = basePath === 'site.customBlocks.gallery';
+  return `<section class="custom-blocks${extraClass ? ` ${extraClass}` : ''}${gallery ? ' custom-blocks--gallery' : ''}">${blocks.filter((block) => block.hidden !== true).map((block, index) => {
     const path = `${basePath}.${blocks.indexOf(block)}`;
     const mobileBeforeIntro = basePath === 'site.customBlocks.home' && block.flowPlacement === 'before' ? ' custom-block--mobile-before' : '';
     const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}${mobileBeforeIntro}`;
-    const style = `${imageStyle(block)};${blockStyle(block)}`;
-    if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption></figure>`;
+    const style = `${imageStyle(block)};${blockStyle(block)}${gallery ? `;${galleryBlockStyle(block)}` : ''}`;
+    if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" draggable="false" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption>${gallery ? '<button class="gallery-drag-handle" type="button" draggable="true" aria-label="Déplacer cette image dans la galerie">↕ Déplacer</button>' : ''}</figure>`;
     if (block.type === 'quote') return `<blockquote class="custom-block custom-block--quote ${classes}" style="${style}" data-edit-path="${path}" data-edit-label="Citation"><p data-edit-path="${path}.text" data-edit-inline="true">${escapeHtml(block.text || 'Citation')}</p></blockquote>`;
     if (block.type === 'divider') return `<hr class="custom-block custom-block--divider" data-edit-path="${path}" data-edit-label="Séparateur" />`;
     if (block.type === 'spacer') return `<div class="custom-block custom-block--spacer" style="--space:${Math.max(20, Math.min(240, Number(block.height) || 80))}px" data-edit-path="${path}" data-edit-label="Espacement"></div>`;
@@ -646,6 +657,13 @@ function updatePreviewValue(path, value) {
   const blockMatch = path.match(/^(site\.customBlocks\.[^.]+\.\d+|projects\.\d+\.(?:blocks|heroBlocks)\.\d+)\.(src|radius|format|width|columnSpan|align|spacing|fontFamily|fontSize|textAlign|textColor|color|surface|background|padding|minHeight|offsetX|offsetY|positionY)$/);
   if (mediaMatch || galleryMatch || blockMatch) {
     const base = mediaMatch ? `projects.${mediaMatch[1]}.media.${mediaMatch[2]}` : galleryMatch ? `site.gallery.items.${galleryMatch[1]}` : blockMatch[1];
+    if (base.startsWith('site.customBlocks.gallery.')) {
+      renderCustomBlocks(runtime.site);
+      bindContentLayout();
+      prepareAdminPreview();
+      document.querySelector(`[data-edit-path="${base}"]`)?.classList.add('admin-selected');
+      return;
+    }
     const element = [...document.querySelectorAll('[data-edit-path]')].find((item) => item.dataset.editPath === base);
     if (!element) return;
     const item = base.split('.').reduce((current, part) => current?.[part], runtime);
@@ -656,7 +674,7 @@ function updatePreviewValue(path, value) {
       const placement = item.align || ['left', 'right', 'center'][Number(mediaMatch[2]) % 3];
       element.className = `project-media project-media--${safeToken(item.kind, 'wide')} project-media--${safeToken(placement, 'center')} project-media--${safeToken(item.format, 'landscape')}${mediaGridClass(item)} ${radiusClass(item.radius || (item.kind === 'cutout' || item.kind === 'plan' ? 'none' : 'soft'))}${selected}`;
     } else if (galleryMatch) {
-      element.style.cssText = imageStyle(item);
+      element.style.cssText = galleryItemStyle(item);
       element.className = `gallery-item gallery-item--${safeToken(item.size, 'medium')} gallery-item--${safeToken(item.format, 'original')}${mediaGridClass(item)} ${radiusClass(item.radius || 'soft')}${selected}`;
     } else {
       element.style.cssText = `${imageStyle(item)};${blockStyle(item)}`;
@@ -665,7 +683,7 @@ function updatePreviewValue(path, value) {
       const type = item.type === 'image' ? 'image' : item.type === 'quote' ? 'quote' : `text custom-block--${safeToken(item.style, 'body')}`;
       element.className = `custom-block custom-block--${type} ${classes} ${radiusClass(item.radius || 'soft')}${selected}`;
     }
-    bindLayout(element, item);
+    if (!galleryMatch) bindLayout(element, item);
     return;
   }
   renderAll(runtime.site, runtime.projects);
@@ -692,6 +710,37 @@ if (isAdminPreview) {
   let touchSelectionUntil = 0;
   let selectedPreviewElement = null;
   let lastSelectionPoint = null;
+  let draggingGalleryIndex = null;
+  document.addEventListener('dragstart', (event) => {
+    const handle = event.target.closest?.('.gallery-drag-handle');
+    if (!previewEditMode || !handle) return;
+    const figure = handle.closest('[data-edit-path^="site.customBlocks.gallery."]');
+    draggingGalleryIndex = Number(figure?.dataset.editPath.split('.').at(-1));
+    if (!Number.isInteger(draggingGalleryIndex)) { event.preventDefault(); return; }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(draggingGalleryIndex));
+  });
+  document.addEventListener('dragover', (event) => {
+    if (draggingGalleryIndex === null) return;
+    const target = event.target.closest?.('[data-edit-path^="site.customBlocks.gallery."]');
+    if (!target || !/^site\.customBlocks\.gallery\.\d+$/.test(target.dataset.editPath)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.gallery-drop-target').forEach(item => item.classList.remove('gallery-drop-target'));
+    target.classList.add('gallery-drop-target');
+  });
+  document.addEventListener('drop', (event) => {
+    const target = event.target.closest?.('[data-edit-path^="site.customBlocks.gallery."]');
+    if (draggingGalleryIndex === null || !target || !/^site\.customBlocks\.gallery\.\d+$/.test(target.dataset.editPath)) return;
+    event.preventDefault();
+    window.parent.postMessage({type:'mayin:move-gallery',from:draggingGalleryIndex,to:Number(target.dataset.editPath.split('.').at(-1))},location.origin);
+    draggingGalleryIndex = null;
+    document.querySelectorAll('.gallery-drop-target').forEach(item => item.classList.remove('gallery-drop-target'));
+  });
+  document.addEventListener('dragend', () => {
+    draggingGalleryIndex = null;
+    document.querySelectorAll('.gallery-drop-target').forEach(item => item.classList.remove('gallery-drop-target'));
+  });
   const editableAtPoint = (event) => {
     const direct = event.target.closest?.('[data-edit-path]');
     if (direct?.dataset.editInline === 'true') return direct;

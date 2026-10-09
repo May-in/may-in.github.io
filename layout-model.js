@@ -36,6 +36,13 @@
     // Keep the clamp interval ordered even when an item exceeds its canvas.
     return [Math.min(alignStart, alignEnd), Math.max(alignStart, alignEnd)];
   }
+  function galleryTrackSpan(item = {}, defaultSpan = 12) {
+    const requested = Number(item.columnSpan);
+    const base = Number.isInteger(requested) && requested >= 1 && requested <= 12 ? requested : defaultSpan;
+    const width = Number(item.width);
+    const fraction = Number.isFinite(width) && width > 0 ? Math.max(10, Math.min(100, width)) : 100;
+    return Math.max(1, Math.min(12, Math.round(base * fraction / 100)));
+  }
   function ensureIds(data) {
     identify(data.projects, 'project');
     (data.projects || []).forEach(project => {
@@ -68,7 +75,7 @@
     }).join('/');
     return 'text-' + hash(page + '/' + identity + '/' + occurrence);
   }
-  const api = { ensureIds, styleKey, moveTo, orderPeers, axisOffsetRange };
+  const api = { ensureIds, styleKey, moveTo, orderPeers, axisOffsetRange, galleryTrackSpan };
   root.MayinModel = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);

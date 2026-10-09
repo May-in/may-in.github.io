@@ -121,9 +121,13 @@ const server = http.createServer(async (request, response) => {
     assert.equal(await frame.locator('body').evaluate(() => runtime.projects[0].width), 150, 'Changing project cover width changed the thumbnail');
     await page.locator('#page-list [data-page="gallery"]').click();
     await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
+    await frame.locator('[data-custom-blocks="gallery"] .custom-block--image').first().click();
+    await page.locator('#inspector [data-path="site.customBlocks.gallery.0.width"]').waitFor();
+    assert.equal(await page.locator('#inspector [data-path="site.customBlocks.gallery.0.positionY"]').count(),0,'Gallery still exposes a vertical slider that leaves phantom rows');
+    await page.locator('#page-list [data-page="gallery"]').click();
     const arrangement = page.locator('#inspector [data-arrange-images="site.customBlocks.gallery"][data-columns="4"]');
     await arrangement.waitFor();
-    assert.match(await page.locator('#inspector').innerText(), /Le curseur vertical ajuste une image/, 'Gallery page does not explain the difference between placement and line composition');
+    assert.match(await page.locator('#inspector').innerText(), /Chaque image occupe une vraie place dans la grille/, 'Gallery page still describes pixel offsets instead of real rows');
     const previousGallery = await frame.locator('body').evaluate(() => JSON.stringify(runtime.site.customBlocks.gallery));
     await arrangement.click();
     await page.waitForFunction(() => {
@@ -133,11 +137,17 @@ const server = http.createServer(async (request, response) => {
     await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
     const imageRows = await frame.locator('[data-custom-blocks="gallery"] .custom-block').evaluateAll(items => items.map(item => Math.round(item.getBoundingClientRect().top)));
     assert.equal(new Set(imageRows).size, 1, 'Four editorial gallery images did not share one grid row');
+    const beforeDrag = await frame.locator('body').evaluate(() => runtime.site.customBlocks.gallery.map(item => item.id));
+    const draggedSrc = await frame.locator('[data-custom-blocks="gallery"] .custom-block--image').last().locator('img').getAttribute('src');
+    await frame.locator('.gallery-drag-handle').last().dragTo(frame.locator('[data-custom-blocks="gallery"] .custom-block--image').first());
+    await page.waitForFunction(src => document.querySelector('#preview').contentDocument.querySelector('[data-custom-blocks="gallery"] .custom-block--image img')?.getAttribute('src') === src, draggedSrc);
+    assert.equal(await frame.locator('body').evaluate(() => runtime.site.customBlocks.gallery[0].id), beforeDrag[3], 'Dragging an image did not change its order');
     await page.locator('#page-list [data-page="gallery"]').click();
     await page.locator('#inspector [data-add-block="image"][data-block-base="site.customBlocks.gallery"]').click();
     await page.locator('#image-input').setInputFiles(path.join(root, 'favicon.png'));
     await page.waitForFunction(() => document.querySelector('#preview').contentDocument.querySelectorAll('[data-custom-blocks="gallery"] .custom-block--image').length === 5);
     assert.equal(await frame.locator('[data-custom-blocks="gallery"] .custom-block--image').last().evaluate(item => item.style.getPropertyValue('--block-span')), '3', 'A new image did not inherit the section’s four-column layout');
+    await page.locator('#undo').click();
     await page.locator('#undo').click();
     await page.locator('#undo').click();
     await page.waitForTimeout(200);

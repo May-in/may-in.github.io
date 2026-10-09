@@ -5,6 +5,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require(process.argv[2] || 'playwright');
 const root = path.resolve(__dirname,'..');
+const screenshotDir = process.env.MAYIN_SCREENSHOT_DIR;
 const mime = {'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'};
 const server = http.createServer(async(req,res) => {
   const pathname = new URL(req.url,'http://localhost').pathname;
@@ -30,15 +31,28 @@ const server = http.createServer(async(req,res) => {
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
     for (const url of paths) {
-      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=20"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
+      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=21"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
       await page.setViewportSize({width:1440,height:900});
       await page.goto(base+'/'+url);
       await page.waitForFunction(()=>runtime.site && document.querySelector('[data-layout-item]'));
       await page.evaluate(()=>document.fonts.ready);
+      const shotName = url.replace(/\.html/g,'').replace(/[?&=]/g,'-');
+      if (screenshotDir) {
+        await fs.mkdir(screenshotDir,{recursive:true});
+        await page.evaluate(async()=>{
+          const images=[...document.images];
+          images.forEach(image=>{image.loading='eager';});
+          await Promise.all(images.map(image=>image.decode().catch(()=>{})));
+        });
+        const brokenImages=await page.evaluate(()=>[...document.images].filter(image=>!image.naturalWidth).map(image=>image.currentSrc || image.src));
+        assert.deepEqual(brokenImages,[],'Broken images in '+url);
+        await page.screenshot({path:path.join(screenshotDir,shotName+'-desktop.png'),fullPage:true});
+      }
       for (const width of [1440,1024,980,844,768,390,320,1440]) {
         await page.setViewportSize({width,height:width<600?844:900});
         await page.evaluate(()=>{applyElementStyles(runtime.site);fitLayout();});
         await page.waitForTimeout(25);
+        if (screenshotDir && width === 390) await page.screenshot({path:path.join(screenshotDir,shotName+'-mobile.png'),fullPage:true});
         const result=await page.evaluate(()=>{
           const vw=document.documentElement.clientWidth;
           const bad=[...document.querySelectorAll('main img:not(.home-hero__background),[data-edit-inline],.project-category,.project-arrow')].filter(el=>el.getClientRects().length).map(el=>({path:el.dataset.editPath || el.className,x:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right})).filter(el=>el.x < -1 || el.right > vw+1);
@@ -89,6 +103,15 @@ const server = http.createServer(async(req,res) => {
     await page.goto(base+'/galerie.html');
     await page.waitForFunction(()=>runtime.site && document.querySelector('#gallery-grid'));
     await page.setViewportSize({width:1440,height:900});
+    const publishedGallery=await page.evaluate(()=>{
+      const items=[...document.querySelectorAll('[data-custom-blocks="gallery"] .custom-block--image')];
+      const bottom=Math.max(...items.map(item=>item.getBoundingClientRect().bottom));
+      return {count:items.length,gap:document.querySelector('.footer').getBoundingClientRect().top-bottom,translated:items.some(item=>item.hasAttribute('data-layout-item')),lastSpan:items.at(-1)?.style.getPropertyValue('--gallery-span')};
+    });
+    assert.equal(publishedGallery.count,4,'Published gallery blocks disappeared');
+    assert.ok(publishedGallery.gap<200,'Gallery keeps an empty row after visually moved images: '+JSON.stringify(publishedGallery));
+    assert.equal(publishedGallery.translated,false,'Gallery still uses pixel translations instead of its actual grid cells');
+    assert.equal(publishedGallery.lastSpan,'3','Gallery reserves empty tracks around a visually small legacy image');
     await page.evaluate(()=>{
       runtime.site.gallery.items=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Test '+index,category:'Test',size:'small',columnSpan:3,radius:'none'}));
       renderGallery(runtime.site);bindContentLayout();fitLayout();

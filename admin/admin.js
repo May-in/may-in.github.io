@@ -1,5 +1,5 @@
-import '../layout-model.js?v=5';
-const STUDIO_VERSION = '1.9.0';
+import '../layout-model.js?v=6';
+const STUDIO_VERSION = '1.9.1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -163,6 +163,22 @@ function normalizeBackup(payload) {
   return { site, projects, _publishedFingerprint:/^[a-f0-9]{64}$/.test(payload._publishedFingerprint || '') ? payload._publishedFingerprint : '' };
 }
 
+function draftCompatibilityError(value) {
+  const site = value?.site;
+  if (!site || site.schemaVersion !== publishedData?.site?.schemaVersion) return 'Ce brouillon utilise une structure de site incompatible. Il est conservé, mais ne sera pas publié.';
+  if (!Array.isArray(value.projects) || !Array.isArray(site.gallery?.items) || !site.customBlocks ||
+      Object.values(site.customBlocks).some(items => !Array.isArray(items))) return 'La structure du brouillon est incomplète. Il est conservé, mais ne sera pas publié.';
+  const slugs = new Set();
+  for (const project of value.projects) {
+    if (!project || typeof project.slug !== 'string' || !project.slug || typeof project.title !== 'string' ||
+        slugs.has(project.slug) || !Array.isArray(project.media) || !Array.isArray(project.blocks) || !Array.isArray(project.heroBlocks)) {
+      return 'Un projet du brouillon est incomplet ou dupliqué. Le brouillon est conservé, sans publication.';
+    }
+    slugs.add(project.slug);
+  }
+  return '';
+}
+
 function upgradeDraftShape(payload, reference = publishedData) {
   if (!payload?.site || !Array.isArray(payload.projects)) return payload;
   const site = payload.site;
@@ -199,6 +215,8 @@ function upgradeDraftShape(payload, reference = publishedData) {
 async function importBackup(file) {
   try {
     const restored = normalizeBackup(JSON.parse(await file.text()));
+    const incompatibility = draftCompatibilityError(restored);
+    if (incompatibility) throw new Error(incompatibility);
     if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
     data = upgradeDraftShape({ site:clone(restored.site), projects:clone(restored.projects) });
@@ -332,12 +350,19 @@ function responsiveWidthField(path, allowSmallSpans = false) {
 function imageArrangementControls(listPath) {
   const images = getPath(listPath)?.filter(item => item && (item.type === 'image' || item.src)) || [];
   if (images.length < 2) return '';
-  return `<div class="form-section"><h3>Images par ligne · ordinateur</h3><p class="form-note">Choisis combien d’images placer côte à côte. Le curseur vertical ajuste une image dans sa place, mais ne la fait pas changer de ligne. Sur téléphone, les images s’empilent. Ce choix ne change ni les photos ni leur ordre ; Annuler retrouve la composition précédente.</p><div class="field-row">${[2,3,4,6].map(count => `<button class="button" type="button" data-arrange-images="${listPath}" data-columns="${count}">${count} par ligne</button>`).join('')}</div></div>`;
+  const note = listPath === 'site.customBlocks.gallery'
+    ? 'Chaque image occupe une vraie place dans la grille. Glisse sa poignée dans l’aperçu ou utilise Avant / Après pour changer l’ordre. Sur téléphone, les images s’empilent. Annuler retrouve la composition précédente.'
+    : 'Choisis combien d’images placer côte à côte. Sur téléphone, les images s’empilent. Ce choix ne change ni les photos ni leur ordre ; Annuler retrouve la composition précédente.';
+  return `<div class="form-section"><h3>Images par ligne · ordinateur</h3><p class="form-note">${note}</p><div class="field-row">${[2,3,4,6].map(count => `<button class="button" type="button" data-arrange-images="${listPath}" data-columns="${count}">${count} par ligne</button>`).join('')}</div></div>`;
 }
 function nextImageSpan(items, fallback) {
   const previous = [...items].reverse().find(item => item && (item.type === 'image' || item.src));
   const span = Number(previous?.columnSpan);
   return Number.isInteger(span) && span >= 1 && span <= 12 ? span : fallback;
+}
+function nextGallerySpan(items) {
+  const previous = [...items].reverse().find(item => item?.type === 'image');
+  return previous ? MayinModel.galleryTrackSpan(previous) : 3;
 }
 function layoutPositionFields(base) {
   return `${field('Position horizontale (ordinateur)', `${base}.offsetX`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}${field('Déplacement vertical indépendant (ordinateur)', `${base}.positionY`, 'range', { min:-1200, max:1200, step:5, defaultValue:0, unit:'px' })}`;
@@ -355,7 +380,10 @@ function contentOutline(basePath, items = [], title = 'Ordre') {
 }
 function styleBlockControls(path, block) {
   const isImage = block.type === 'image';
-  const positioning = `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`, isImage)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(path)}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La place dans la ligne organise les images ; le déplacement règle seulement leur position fine. Sur téléphone, les éléments s’empilent.</p></div>`;
+  const galleryBlock = path.startsWith('site.customBlocks.gallery.');
+  const positioning = galleryBlock
+    ? `<div class="form-section"><h3>Composition de la galerie</h3>${responsiveWidthField(`${path}.columnSpan`, true)}${field('Largeur', `${path}.width`, 'range', { min:10, max:100, step:5, defaultValue:100 })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La largeur et la place dans la ligne déterminent la grille. Pour remonter un bloc, déplace-le dans l’ordre ; les anciens décalages verticaux sont ignorés ici pour éviter les grands blancs.</p></div>`
+    : `<div class="form-section"><h3>Position et dimensions</h3>${responsiveWidthField(`${path}.columnSpan`, isImage)}${field('Largeur dans sa colonne', `${path}.width`, 'range', { min:25, max:200, step:5, defaultValue:100 })}${field('Placement horizontal', `${path}.align`, 'select', { choices: [['left','Gauche'],['center','Centre'],['right','Droite']] })}${layoutPositionFields(path)}${field('Espace après', `${path}.spacing`, 'range', { min:0, max:240, step:4, defaultValue:36, unit:'px' })}${isImage ? field('Cadre de l’image', `${path}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] }) : ''}<p class="form-note">La place dans la ligne organise les images ; le déplacement règle seulement leur position fine. Sur téléphone, les éléments s’empilent.</p></div>`;
   if (isImage) return positioning + choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']]);
   return `${positioning}<div class="form-section"><h3>Texte</h3>${field('Alignement', `${path}.textAlign`, 'select', { choices: [['left','À gauche'],['center','Centré'],['right','À droite'],['justify','Justifié']] })}${field('Police', `${path}.fontFamily`, 'select', { choices: [['sans','Sans sérif'],['serif','Éditoriale'],['mono','Monospace']] })}${field('Taille', `${path}.fontSize`, 'range', { min:14, max:96, step:1, defaultValue:block.style === 'lead' ? 48 : 18, unit:'px' })}${field('Couleur du texte', `${path}.textColor`, 'select', { choices: [['inherit','Par défaut'],['ink','Texte de la palette'],['accent','Accent'],['paper','Claire'],['custom','Personnalisée']] })}${field('Couleur personnalisée', `${path}.color`, 'color', { defaultValue:'#2a1718' })}</div><div class="form-section"><h3>Zone colorée</h3>${field('Fond', `${path}.surface`, 'select', { choices: [['none','Aucun fond'],['paper','Fond principal'],['soft','Fond doux'],['ink','Foncé'],['accent','Accent'],['custom','Personnalisé']] })}${field('Couleur personnalisée', `${path}.background`, 'color', { defaultValue:'#f3ede3' })}${field('Marge intérieure', `${path}.padding`, 'range', { min:0, max:120, step:4, defaultValue:0, unit:'px' })}${field('Hauteur minimale', `${path}.minHeight`, 'range', { min:0, max:520, step:10, defaultValue:0, unit:'px' })}</div>${choices('Coins', `${path}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}`;
 }
@@ -503,7 +531,7 @@ async function handleUpload(file) {
     if (uploadTarget.type === 'path') setPath(uploadTarget.path, dataUrl);
     if (uploadTarget.type === 'project-media') { const media = data.projects[uploadTarget.index].media ||= []; media.push({ src:dataUrl, alt:'', caption:'', kind:'wide', format:'landscape', align:'center', radius:'soft', width:100, columnSpan:nextImageSpan(media,'') }); selectedPath = `projects.${uploadTarget.index}.media.${media.length-1}`; }
     if (uploadTarget.type === 'gallery') { const items = data.site.gallery.items; items.push({ src:dataUrl, alt:'', caption:'', credit:'', category:data.site.gallery.categories[0] || 'Galerie', size:'medium', radius:'soft', width:100, columnSpan:nextImageSpan(items,'') }); selectedPath = `site.gallery.items.${items.length-1}`; }
-    if (uploadTarget.type === 'block-image') { if (!Array.isArray(getPath(uploadTarget.base))) setPath(uploadTarget.base, []); const blocks = getPath(uploadTarget.base); blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100, columnSpan:nextImageSpan(blocks,12) }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
+    if (uploadTarget.type === 'block-image') { if (!Array.isArray(getPath(uploadTarget.base))) setPath(uploadTarget.base, []); const blocks = getPath(uploadTarget.base); blocks.push({ type:'image', src:dataUrl, alt:'', caption:'', radius:'soft', width:100, columnSpan:uploadTarget.base === 'site.customBlocks.gallery' ? nextGallerySpan(blocks) : nextImageSpan(blocks,12) }); selectedPath = `${uploadTarget.base}.${blocks.length-1}`; }
     uploadTarget = null; markChanged(); showToast('Image optimisée et ajoutée');
   } catch (error) { showToast(error.message || 'Impossible de traiter cette image', true); setSaveState('Erreur'); }
 }
@@ -525,6 +553,8 @@ async function publish() {
   if (localMode) return showToast('Publication désactivée dans la prévisualisation locale', true);
   if (dom.publish.disabled) return;
   try {
+    const incompatibility = draftCompatibilityError(data);
+    if (incompatibility) throw new Error(incompatibility);
     // Save the local recovery copy before starting a potentially slow request.
     if (!flushDraft() && backupRevision !== draftRevision) return;
     const submittedRevision = draftRevision;
@@ -602,6 +632,9 @@ addEventListener('message', (event) => {
     if (/^page-[a-z0-9-]+$/.test(event.data.scope)) { data.site.styleMigrations ||= {}; data.site.styleMigrations[event.data.scope] = true; }
   }
   if (event.data.type === 'mayin:select') selectPreviewPath(event.data.path, event.data.styleId, event.data.layoutPeers);
+  if (event.data.type === 'mayin:move-gallery' && Number.isInteger(event.data.from) && Number.isInteger(event.data.to)) {
+    moveItemTo('site.customBlocks.gallery', event.data.from, event.data.to);
+  }
   if (event.data.type === 'mayin:inline') { if (inlineSessionPath !== event.data.path) { pushHistory(); inlineSessionPath = event.data.path; } setPath(event.data.path, event.data.value); const field = [...dom.inspector.querySelectorAll('[data-path]')].find((input) => input.dataset.path === event.data.path); if (field && field !== document.activeElement) field.value = event.data.value; markChanged(false, false, false); }
   if (event.data.type === 'mayin:inline-commit') { if (inlineSessionPath === event.data.path) { const projectIndex = pathParts(event.data.path)[0] === 'projects' ? pathParts(event.data.path)[1] : null; inlineSessionPath = ''; if (typeof projectIndex === 'number') renderProjectList(); } }
 });

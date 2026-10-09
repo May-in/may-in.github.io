@@ -169,5 +169,53 @@ main,section,figure,.project-card,.project-title-row,.project-meta,.footer-botto
  .home-intro--editable>div:not([data-custom-blocks]){order:2}
  .home-intro--editable .custom-block--mobile-before{order:1}
  .home-intro--editable .custom-block:not(.custom-block--mobile-before){order:3}
- .home-intro--editable .custom-block+.custom-block{margin-top:32px!important}
+.home-intro--editable .custom-block+.custom-block{margin-top:32px!important}
 }
+
+/* Gallery images participate in real layout rows. Existing negative pixel
+   offsets remain in saved content for reversibility, but are not applied here. */
+.gallery-page .gallery-empty--with-items{padding-bottom:36px}
+.gallery-page .gallery-grid:empty{display:none}
+.gallery-page [data-custom-blocks="gallery"]>.custom-blocks--gallery{
+ display:grid;
+ grid-template-columns:repeat(12,minmax(0,1fr));
+ grid-auto-flow:row;
+ align-items:start;
+ gap:clamp(14px,2.4vw,36px);
+ padding:0 3.5vw 32px;
+}
+.gallery-page .custom-blocks--gallery>.custom-block{
+ grid-column:span var(--gallery-span,12);
+ width:100%;
+ min-width:0;
+ margin:0;
+ position:relative;
+ left:auto;
+ top:auto;
+ transform:none;
+}
+.gallery-page .gallery-grid .gallery-item{
+ position:relative;
+ left:auto;
+ top:auto;
+ margin-top:0;
+ width:100%;
+}
+.gallery-drag-handle{display:none}
+.admin-preview--edit .gallery-drag-handle{
+ display:block;position:absolute;z-index:7;right:12px;bottom:12px;
+ padding:9px 12px;border:0;border-radius:999px;
+ background:rgba(35,23,25,.88);color:#fff;font:500 11px var(--mono);
+ cursor:grab;white-space:nowrap;
+}
+.admin-preview--edit .gallery-drag-handle:active{cursor:grabbing}
+.admin-preview--edit .gallery-drop-target{outline:3px solid var(--wine);outline-offset:5px}
+@media(max-width:980px){
+ .gallery-page [data-custom-blocks="gallery"]>.custom-blocks--gallery{grid-template-columns:minmax(0,1fr);padding:0 20px 32px;gap:32px}
+ .gallery-page .custom-blocks--gallery>.custom-block{grid-column:1/-1;width:100%;max-width:100%}
+}
+
+/* Controls and short links must not break a word inside their hit target. */
+.filter,.menu-toggle,.contact-form button,.navigation a,.project-back,.round-link{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.large-link,.contact-link{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@media(max-width:760px){.large-link,.contact-link{font-size:clamp(24px,7vw,52px)}}

@@ -202,6 +202,19 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await page.locator('#publish-conflict:visible').waitFor();
     assert.equal(pending, null, 'A legacy draft without a known source overwrote newer published content');
     assert.equal((await stored()).site.name, 'Preserved draft content');
+    // Even a draft carrying a valid base must not publish across a schema change.
+    await page.locator('#discard-draft').click();
+    await page.locator('[data-panel="settings"]').click();
+    await field.fill('Incompatible schema remains recoverable'); await save();
+    await page.evaluate(key => {
+      const draft=JSON.parse(localStorage.getItem(key));
+      draft.site.schemaVersion=999;
+      localStorage.setItem(key,JSON.stringify(draft));
+    },key);
+    await page.reload(); await ready();
+    pending=null; await page.locator('#publish').click();
+    assert.equal(pending,null,'An incompatible schema reached the publish endpoint');
+    assert.equal((await stored()).site.name,'Incompatible schema remains recoverable','Rejected draft was deleted');
     assert.deepEqual(errors, []);
     console.log('Draft reliability OK: rapid reload, keyboard/preview save, background save, quota recovery/export on phone, discard timer, concurrent edits, failed/expired/successful publication. No live writes.');
   } finally { await browser.close(); }

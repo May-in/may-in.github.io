@@ -168,6 +168,49 @@
         "width": 100,
         "columnSpan": 3,
         "id": "block-i30uyq"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791542989165-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": 3
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791542989166-2-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "6"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791542989166-3-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": 6
+      },
+      {
+        "width": 100,
+        "columnSpan": 12,
+        "align": "left",
+        "spacing": 36,
+        "textAlign": "left",
+        "fontFamily": "sans",
+        "fontSize": 18,
+        "textColor": "inherit",
+        "surface": "none",
+        "padding": 0,
+        "minHeight": 0,
+        "radius": "soft",
+        "type": "spacer",
+        "height": 240
       }
     ],
     "about": [

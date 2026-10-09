@@ -177,9 +177,9 @@
         "alt": "",
         "caption": "",
         "radius": "soft",
-        "width": 40,
+        "width": 45,
         "offsetY": -485,
-        "offsetX": -285,
+        "offsetX": -15,
         "spacing": 0,
         "id": "block-1guydu4",
         "positionY": -105
@@ -190,7 +190,7 @@
         "spacing": 0,
         "textAlign": "justify",
         "fontFamily": "sans",
-        "fontSize": 14,
+        "fontSize": 18,
         "textColor": "inherit",
         "surface": "none",
         "padding": 0,
@@ -200,7 +200,7 @@
         "style": "body",
         "text": "Je m'appelle Célia May et je suis actuellement en première année de master à l'école supérieur des arts de Mons en architecture d'intérieur. \nAussi loin que je m'en souvienne, j'ai toujours été créative et manuelle. Plus jeune, j'aimais inventer des histoires ; j'imaginais alors tout ce qui les composait : les objets, les personnes mais également les espaces. L'imagination a toujours été mon super pouvoir et l'architecture d'intérieur était alors une évidence pour moi.",
         "offsetY": 50,
-        "offsetX": 250,
+        "offsetX": -15,
         "id": "block-1qct2yl",
         "positionY": -170
       },
@@ -210,7 +210,7 @@
         "spacing": 0,
         "textAlign": "justify",
         "fontFamily": "sans",
-        "fontSize": 14,
+        "fontSize": 18,
         "textColor": "inherit",
         "surface": "none",
         "padding": 0,
@@ -220,7 +220,7 @@
         "style": "body",
         "text": "Avec le recul, je me rends compte que beaucoup de choses qui m'attiraient depuis toujours se retrouvent dans ce métier : imaginer, transformer des espaces, bricoler, dessiner, me projeter, avoir un impact réel dans ce monde, ... Mes études en architecture d'intérieur ont finalement réuni toutes ces passions en une seule pratique : construire des espaces qui ont un impact réel sur la vie des personnes qui y rentrent. ",
         "offsetY": 185,
-        "offsetX": 265,
+        "offsetX": -15,
         "id": "block-1qjsxit",
         "positionY": -360
       },
@@ -786,7 +786,8 @@
       "offsetX": -50
     },
     "text-x6r2jn": {
-      "offsetX": 500
+      "offsetX": 550,
+      "positionY": 40
     },
     "text-1ui1fbo": {
       "fontSize": 16,
@@ -1009,6 +1010,9 @@
     },
     "text-14hdbgm": {
       "textColor": "accent"
+    },
+    "text-1u6038f": {
+      "positionY": 80
     }
   },
   "studioVersion": "1.9.1",

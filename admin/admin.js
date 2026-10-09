@@ -1,5 +1,5 @@
 import '../layout-model.js?v=6';
-const STUDIO_VERSION = '1.9.1';
+const STUDIO_VERSION = '1.9.2';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -32,6 +32,11 @@ let publishedData = null;
 let publishedFingerprint = '';
 let draftBaseFingerprint = '';
 const draftBaseKey = 'mayin-studio-draft-base';
+const draftKey = 'mayin-studio-draft';
+let draftWrite = Promise.resolve();
+let lastSavedAt = 0;
+let storedDraftCandidate = null;
+let storedDraftDownloaded = false;
 let undoStack = [];
 let redoStack = [];
 let selectedPath = '';
@@ -108,34 +113,121 @@ function draftSaveFailed() {
   dom.draftWarning.hidden = false;
   setSaveState('Brouillon non enregistré');
 }
+function draftDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) return reject(new Error('IndexedDB indisponible'));
+    let request;
+    try { request = indexedDB.open('mayin-studio', 1); } catch (error) { return reject(error); }
+    request.onupgradeneeded = () => request.result.createObjectStore('drafts');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('Stockage du brouillon bloqué par un autre onglet'));
+  });
+}
+async function indexedDraft(action, value) {
+  const database = await draftDatabase();
+  return new Promise((resolve, reject) => {
+    let result;
+    try {
+      const transaction = database.transaction('drafts', action === 'get' ? 'readonly' : 'readwrite');
+      const store = transaction.objectStore('drafts');
+      const request = action === 'put' ? store.put(value, draftKey) : action === 'delete' ? store.delete(draftKey) : store.get(draftKey);
+      request.onsuccess = () => { result = request.result; };
+      transaction.oncomplete = () => { database.close(); resolve(result); };
+      transaction.onerror = () => { database.close(); reject(transaction.error); };
+      transaction.onabort = () => { database.close(); reject(transaction.error || new Error('Transaction interrompue')); };
+    } catch (error) { database.close(); reject(error); }
+  });
+}
+async function readStoredDraft() {
+  let indexed = null, legacy = null;
+  try { indexed = await indexedDraft('get'); } catch { /* localStorage can still be available */ }
+  try { const raw = localStorage.getItem(draftKey); if (raw) legacy = JSON.parse(raw); } catch { /* IndexedDB can still be available */ }
+  if (!indexed && !legacy) return null;
+  const chosen = Number(indexed?._savedAt || 0) >= Number(legacy?._savedAt || 0) ? (indexed || legacy) : legacy;
+  lastSavedAt = Math.max(lastSavedAt, Number(chosen._savedAt || 0));
+  return chosen;
+}
+async function removeStoredDraft() {
+  // Never discard the previous recovery copy until both stores are accessible.
+  await indexedDraft('delete');
+  localStorage.removeItem(draftKey);
+  localStorage.removeItem(draftBaseKey);
+}
 function flushDraft() {
   clearTimeout(saveTimer); saveTimer = 0;
-  if (!draftDirty || !data.site) return true;
-  try {
-    // setItem is atomic: a failed write must leave the preceding draft intact.
-    // Content and its source revision must be written atomically.
-    localStorage.setItem('mayin-studio-draft', JSON.stringify({ ...data, _publishedFingerprint:draftBaseFingerprint }));
-    draftDirty = false; dom.draftWarning.hidden = true;
-    setSaveState('Brouillon local · non publié');
-    return true;
-  } catch {
-    draftSaveFailed();
-    return false;
-  }
+  if (!draftDirty || !data.site) return Promise.resolve(true);
+  const revision = draftRevision;
+  const savedAt = lastSavedAt = Math.max(Date.now(), lastSavedAt + 1);
+  const snapshot = { ...clone(data), _publishedFingerprint:draftBaseFingerprint, _savedAt:savedAt };
+  const operation = draftWrite.then(async () => {
+    try {
+      // IndexedDB handles image-rich drafts without localStorage's small quota.
+      try { await indexedDraft('put', snapshot); }
+      catch { localStorage.setItem(draftKey, JSON.stringify(snapshot)); }
+      if (draftRevision === revision) {
+        draftDirty = false; dom.draftWarning.hidden = true;
+        setSaveState('Brouillon local · non publié');
+      }
+      return true;
+    } catch {
+      draftSaveFailed();
+      return false;
+    }
+  });
+  draftWrite = operation.then(() => {}, () => {});
+  return operation;
 }
 function saveDraftSoon() {
   draftDirty = true; draftRevision++;
   clearTimeout(saveTimer); setSaveState('Modifications…');
   saveTimer = setTimeout(flushDraft, 500);
 }
-function exportBackup() {
-  const blob = new Blob([JSON.stringify({ ...data, _publishedFingerprint:draftBaseFingerprint }, null, 2)], { type:'application/json' });
+function downloadBackup(payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;
   link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  showToast('Sauvegarde demandée : vérifie qu’elle apparaît dans tes téléchargements.');
+}
+function exportBackup() {
+  downloadBackup({ ...data, _publishedFingerprint:draftBaseFingerprint });
   backupRevision = draftRevision;
-  showToast('Sauvegarde téléchargée');
+}
+async function offerStoredDraft(saved) {
+  storedDraftCandidate = saved;
+  storedDraftDownloaded = false;
+  const origin = await draftOrigin(saved);
+  const incompatibility = draftCompatibilityError(saved);
+  const date = Number(saved._savedAt) ? new Date(saved._savedAt).toLocaleString('fr-BE') : '';
+  $('#draft-choice-description').textContent = `${date ? `Enregistré le ${date}. ` : ''}${origin === publishedFingerprint ? 'Il vient de la version publiée actuelle.' : 'Il vient d’une autre version publiée ou son origine est inconnue. La publication sera bloquée tant que ce conflit n’est pas résolu.'}${incompatibility ? ` ${incompatibility}` : ''} Le Studio ne le chargera pas sans ton choix.`;
+  $('#start-from-published').disabled = true;
+  $('#draft-choice').hidden = false;
+  $('#resume-stored-draft').focus();
+}
+async function resumeStoredDraft() {
+  const saved = storedDraftCandidate;
+  if (!saved) return;
+  try {
+    data = upgradeDraftShape(clone(saved), publishedData);
+    draftBaseFingerprint = await draftOrigin(saved);
+    renderAllAdmin();
+    $('#draft-choice').hidden = true;
+    storedDraftCandidate = null;
+    dom.conflictWarning.hidden = draftBaseFingerprint === publishedFingerprint && !draftCompatibilityError(data);
+    setSaveState(dom.conflictWarning.hidden ? 'Brouillon repris · non publié' : 'Brouillon ancien · publication verrouillée');
+  } catch (error) { data = clone(publishedData); draftBaseFingerprint = publishedFingerprint; showToast(`Impossible d’ouvrir ce brouillon : ${error.message}`, true); }
+}
+async function startFromPublished() {
+  if (!storedDraftCandidate || !storedDraftDownloaded) return;
+  if (!confirm('As-tu vérifié que la sauvegarde JSON est bien dans tes téléchargements ? L’ancien brouillon local sera retiré pour commencer sur le site publié.')) return;
+  try { await removeStoredDraft(); }
+  catch { showToast('Impossible de retirer l’ancien brouillon. Il reste conservé sur cet appareil.', true); return; }
+  storedDraftCandidate = null;
+  $('#draft-choice').hidden = true;
+  data = clone(publishedData); draftBaseFingerprint = publishedFingerprint;
+  dom.conflictWarning.hidden = true; renderAllAdmin(); setSaveState('Version publiée');
 }
 function markChanged(refreshInspector = true, syncPreview = true, refreshLists = true) {
   saveDraftSoon(); if (syncPreview) sendDraft(); if (refreshLists) renderProjectList(); if (refreshInspector) renderInspector();
@@ -143,12 +235,14 @@ function markChanged(refreshInspector = true, syncPreview = true, refreshLists =
 function mutate(path, value, refresh = true) { pushHistory(); setPath(path, value); saveDraftSoon(); sendPreviewPatch(path, value); if (refresh) renderInspector(); }
 function undo() { if (!undoStack.length) return; redoStack.push(JSON.stringify(data)); data = JSON.parse(undoStack.pop()); inlineSessionPath = ''; updateHistoryButtons(); saveDraftSoon(); renderAllAdmin(); setSaveState('Brouillon local · non publié'); }
 function redo() { if (!redoStack.length) return; undoStack.push(JSON.stringify(data)); data = JSON.parse(redoStack.pop()); inlineSessionPath = ''; updateHistoryButtons(); saveDraftSoon(); renderAllAdmin(); setSaveState('Brouillon local · non publié'); }
-function discardDraft() {
+async function discardDraft() {
   if (!publishedData) return;
   if (!confirm('Revenir à la dernière version publiée ? Les modifications de ce brouillon seront retirées de cet appareil.')) return;
-  try { localStorage.removeItem('mayin-studio-draft'); localStorage.removeItem(draftBaseKey); }
+  clearTimeout(saveTimer); saveTimer = 0;
+  const revision = draftRevision;
+  try { await draftWrite; if (revision !== draftRevision) return; await removeStoredDraft(); }
   catch { showToast('Impossible de retirer le brouillon. Son contenu reste inchangé.', true); return; }
-  clearTimeout(saveTimer); saveTimer = 0; draftDirty = false; draftRevision++;
+  draftDirty = false; draftRevision++;
   dom.draftWarning.hidden = true;
   data = clone(publishedData); undoStack = []; redoStack = []; inlineSessionPath = '';
   draftBaseFingerprint = publishedFingerprint; dom.conflictWarning.hidden = true;
@@ -217,7 +311,7 @@ async function importBackup(file) {
     const restored = normalizeBackup(JSON.parse(await file.text()));
     const incompatibility = draftCompatibilityError(restored);
     if (incompatibility) throw new Error(incompatibility);
-    if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
+    if ((draftDirty || await readStoredDraft()) && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
     data = upgradeDraftShape({ site:clone(restored.site), projects:clone(restored.projects) });
     draftBaseFingerprint = await draftOrigin(restored);
@@ -225,7 +319,7 @@ async function importBackup(file) {
     selectedStyleId = '';
     inlineSessionPath = '';
     renderAllAdmin(); saveDraftSoon();
-    if (flushDraft()) {
+    if (await flushDraft()) {
       setSaveState('Sauvegarde restaurée · non publiée');
       showToast('Sauvegarde restaurée dans le brouillon. Vérifie-la avant de publier.');
     }
@@ -556,7 +650,10 @@ async function publish() {
     const incompatibility = draftCompatibilityError(data);
     if (incompatibility) throw new Error(incompatibility);
     // Save the local recovery copy before starting a potentially slow request.
-    if (!flushDraft() && backupRevision !== draftRevision) return;
+    if (!await flushDraft() && backupRevision !== draftRevision) {
+      showToast('Publication arrêtée : télécharge d’abord une sauvegarde de ces modifications.', true);
+      return;
+    }
     const submittedRevision = draftRevision;
     dom.publish.disabled = true; dom.publish.textContent = 'Publication…'; setSaveState('Publication en cours…');
     const currentResponse = await fetch(`${apiBase}/api/content`, { cache:'no-store', headers:authHeaders() });
@@ -571,30 +668,33 @@ async function publish() {
     const payload = collectPublishData();
     const response = await fetch(`${apiBase}/api/publish`, { method:'POST', headers:authHeaders({ 'Content-Type':'application/json', 'X-Mayin-CSRF':csrf }), body:JSON.stringify({ site:payload.site, projects:{ projects:payload.projects }, files:payload.files, message:'Mise à jour depuis le Studio May’in' }) });
     if (response.status === 401) throw new Error('Session expirée : exporte ton brouillon avant de te reconnecter.');
-    const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Publication refusée');
+    let result;
+    try { result = await response.json(); }
+    catch { throw new Error(`Le service a refusé la publication (HTTP ${response.status}). Ton brouillon est conservé.`); }
+    if (!response.ok) throw new Error(result.error || `Publication refusée (HTTP ${response.status})`);
     publishedData = clone({ site:payload.site, projects:payload.projects });
     publishedFingerprint = await contentFingerprint(publishedData);
     draftBaseFingerprint = publishedFingerprint;
     dom.conflictWarning.hidden = true;
     if (draftRevision !== submittedRevision) {
       // The published snapshot is older than the editor. Never replace newer edits.
-      draftDirty = true; flushDraft();
+      draftDirty = true; await flushDraft();
       showToast('Version envoyée publiée. Tes nouvelles modifications restent dans le brouillon.');
     } else {
       clearTimeout(saveTimer); saveTimer = 0;
       data = clone(publishedData); draftDirty = false;
       undoStack = []; redoStack = []; updateHistoryButtons();
       try {
-        localStorage.removeItem('mayin-studio-draft'); localStorage.removeItem(draftBaseKey);
+        await draftWrite; await removeStoredDraft();
         dom.draftWarning.hidden = true; setSaveState('Publié');
       } catch {
         // Keep a recoverable current copy if removing the old local draft is blocked.
-        draftDirty = true; flushDraft();
+        draftDirty = true; await flushDraft();
       }
       showToast('Le site est publié. Mise en ligne dans quelques instants.');
     }
   } catch (error) {
-    flushDraft();
+    await flushDraft();
     if (!draftDirty) setSaveState('Non publié · brouillon conservé');
     showToast(error.message || 'Échec de la publication', true);
   } finally { dom.publish.disabled = false; dom.publish.textContent = 'Publier'; }
@@ -611,13 +711,13 @@ async function boot() {
     const fragment = new URLSearchParams(location.hash.slice(1));
     if (fragment.has('session')) { sessionToken = fragment.get('session'); sessionStorage.setItem('mayin-session', sessionToken); history.replaceState(null, '', location.pathname + location.search); }
     const publicData = await loadPublicData();
-    if (localMode) { data = publicData; publishedData = clone(publicData); publishedFingerprint = await contentFingerprint(publishedData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? await draftOrigin(JSON.parse(draft), localStorage.getItem(draftBaseKey) || '') : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
+    if (localMode) { data = publicData; publishedData = clone(publicData); publishedFingerprint = await contentFingerprint(publishedData); currentUser = { login:'local' }; draftBaseFingerprint = publishedFingerprint; const draft = await readStoredDraft(); showStudio(); if (draft) await offerStoredDraft(draft); return; }
     if (!apiBase || apiBase.includes('REMPLACER')) return showLogin();
     const auth = await fetch(`${apiBase}/auth/me`, { headers:authHeaders() }); if (!auth.ok) return showLogin();
     const account = await auth.json(); currentUser = account.user; csrf = account.csrf;
     const response = await fetch(`${apiBase}/api/content`, { headers:authHeaders() }); if (!response.ok) throw new Error('Contenu inaccessible');
-    data = await response.json(); publishedData = clone(data); publishedFingerprint = await contentFingerprint(publishedData); const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? await draftOrigin(JSON.parse(draft), localStorage.getItem(draftBaseKey) || '') : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
-    showStudio();
+    data = await response.json(); publishedData = clone(data); publishedFingerprint = await contentFingerprint(publishedData); draftBaseFingerprint = publishedFingerprint;
+    const draft = await readStoredDraft(); showStudio(); if (draft) await offerStoredDraft(draft);
   } catch (error) { console.error(error); showLogin(); showToast('Le service d’administration n’est pas encore disponible', true); }
 }
 
@@ -643,13 +743,29 @@ dom.publish.addEventListener('click', publish); dom.undo.addEventListener('click
 dom.discardDraft.addEventListener('click', discardDraft);
 $('#export-unsaved').addEventListener('click', exportBackup);
 $('#export-conflict').addEventListener('click', exportBackup);
+$('#resume-stored-draft').addEventListener('click', resumeStoredDraft);
+$('#download-stored-draft').addEventListener('click', () => {
+  if (!storedDraftCandidate) return;
+  downloadBackup(storedDraftCandidate);
+  storedDraftDownloaded = true;
+  $('#start-from-published').disabled = false;
+});
+$('#start-from-published').addEventListener('click', startFromPublished);
 $('#retry-save').addEventListener('click', flushDraft);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushDraft(); });
 addEventListener('pagehide', flushDraft);
 addEventListener('beforeunload', (event) => {
-  if (!flushDraft()) { event.preventDefault(); event.returnValue = ''; }
+  if (!draftDirty) return;
+  // beforeunload cannot wait for IndexedDB. Save a small draft synchronously;
+  // for image-heavy drafts, keep the browser's leave-page warning instead.
+  try {
+    const savedAt = lastSavedAt = Math.max(Date.now(), lastSavedAt + 1);
+    localStorage.setItem(draftKey, JSON.stringify({ ...data, _publishedFingerprint:draftBaseFingerprint, _savedAt:savedAt }));
+    draftDirty = false;
+  } catch { event.preventDefault(); event.returnValue = ''; }
 });
 function saveShortcut(event) {
+  if (storedDraftCandidate) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && data.site) {
     event.preventDefault();
     // Let pending inline-edit messages reach the parent before saving.

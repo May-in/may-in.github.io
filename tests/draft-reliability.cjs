@@ -38,15 +38,35 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     });
     const ready = async () => {
       await page.locator('#studio:visible').waitFor();
+      if (await page.locator('#draft-choice').isVisible()) {
+        assert.equal(await page.locator('#draft-choice-description').isVisible(), true, 'A stored draft was loaded without an explicit choice');
+        await page.locator('#resume-stored-draft').click();
+      }
       await page.frameLocator('#preview').locator('[data-edit-path="site.name"]').first().waitFor();
       await page.locator('[data-panel="settings"]').click();
       await page.locator('[data-path="site.name"]').waitFor();
     };
     const field = page.locator('#inspector [data-path="site.name"]');
-    const stored = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+    const stored = () => page.evaluate(async key => {
+      const legacy = JSON.parse(localStorage.getItem(key) || 'null');
+      const indexed = await new Promise(resolve => {
+        try {
+          const opening = indexedDB.open('mayin-studio', 1);
+          opening.onerror = () => resolve(null);
+          opening.onupgradeneeded = () => opening.result.createObjectStore('drafts');
+          opening.onsuccess = () => {
+            const db = opening.result;
+            const request = db.transaction('drafts', 'readonly').objectStore('drafts').get(key);
+            request.onsuccess = () => { db.close(); resolve(request.result || null); };
+            request.onerror = () => { db.close(); resolve(null); };
+          };
+        } catch { resolve(null); }
+      });
+      return Number(indexed?._savedAt || 0) >= Number(legacy?._savedAt || 0) ? (indexed || legacy) : legacy;
+    }, key);
     const save = async () => {
       await page.keyboard.press('Control+s');
-      await page.waitForFunction(key => !!localStorage.getItem(key) && document.querySelector('#save-state').textContent.includes('non publié'), key);
+      await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('non publié'));
     };
     const startPublish = async () => {
       pending = null; await page.locator('#publish').click();
@@ -71,7 +91,8 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     const previewName = page.frameLocator('#preview').locator('.wordmark [data-edit-path="site.name"]');
     await previewName.click(); await page.keyboard.press('End'); await page.keyboard.type(' X');
     await page.keyboard.press('Control+s');
-    await page.waitForFunction(key => JSON.parse(localStorage.getItem(key)).site.name.endsWith(' X'), key);
+    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('non publié'));
+    assert.ok((await stored()).site.name.endsWith(' X'));
 
     await page.locator('[data-panel="settings"]').click();
     await field.fill('Hidden tab saved');
@@ -81,15 +102,22 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     });
     assert.equal((await stored()).site.name, 'Hidden tab saved');
 
-    // A failed write preserves both the previous stored draft and in-memory edits.
-    const beforeQuota = await page.evaluate(key => localStorage.getItem(key), key);
+    // Large image drafts exceed localStorage; IndexedDB must keep saving them.
     await page.evaluate(() => {
       window.restoreStorage = Storage.prototype.setItem;
       Storage.prototype.setItem = function(k,v) { if(k === 'mayin-studio-draft') throw new DOMException('Full','QuotaExceededError'); return window.restoreStorage.call(this,k,v); };
     });
+    await field.fill('Saved despite localStorage quota'); await save();
+    assert.equal((await stored()).site.name, 'Saved despite localStorage quota');
+    assert.equal(await page.locator('#draft-warning').isVisible(), false);
+    // If both stores fail, keep the prior copy and require an exported backup.
+    const beforeQuota = await stored();
+    await page.evaluate(() => {
+      Object.defineProperty(indexedDB, 'open', { configurable:true, value:() => { throw new DOMException('Blocked','UnknownError'); } });
+    });
     await field.fill('Recoverable unsaved edit');
     await page.locator('#draft-warning:visible').waitFor();
-    assert.equal(await page.evaluate(key => localStorage.getItem(key), key), beforeQuota);
+    assert.equal(beforeQuota.site.name, 'Saved despite localStorage quota');
     assert.equal(await field.inputValue(), 'Recoverable unsaved edit');
     await page.setViewportSize({width:390,height:844});
     const warning = await page.locator('#draft-warning').boundingBox();
@@ -105,7 +133,7 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await download.delete();
     await startPublish(); await completePublish(500);
     assert.equal(await field.inputValue(), 'Recoverable unsaved edit', 'Failed publication lost the backed-up in-memory draft');
-    await page.evaluate(() => { Storage.prototype.setItem = window.restoreStorage; });
+    await page.evaluate(() => { Storage.prototype.setItem = window.restoreStorage; delete indexedDB.open; });
     await page.locator('#retry-save').click();
     assert.equal((await stored()).site.name, 'Recoverable unsaved edit');
     assert.equal(await page.locator('#draft-warning').isVisible(), false);
@@ -157,6 +185,7 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await conflictFile.delete();
     await page.setViewportSize({width:1440,height:900});
     await page.locator('#discard-draft').click();
+    await page.waitForFunction(() => document.querySelector('#publish-conflict').hidden);
     assert.equal(await page.locator('#publish-conflict').isVisible(), false, 'Discard kept the conflict warning');
     await page.locator('[data-panel="settings"]').click();
     await field.fill('Newer edit B');
@@ -195,8 +224,8 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
       localStorage.setItem(key, JSON.stringify(draft));
     }, key);
     await page.reload(); await ready();
-    assert.equal((await stored()).site.domain, 'https://may-in.be', 'Old draft restored the former domain');
-    assert.equal((await stored()).site.name, 'Preserved draft content', 'Domain migration lost draft text');
+    assert.equal(await page.locator('#inspector [data-path="site.domain"]').inputValue(), 'https://may-in.be', 'Old draft restored the former domain');
+    assert.equal(await field.inputValue(), 'Preserved draft content', 'Domain migration lost draft text');
     pending = null;
     await page.locator('#publish').click();
     await page.locator('#publish-conflict:visible').waitFor();
@@ -204,13 +233,22 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     assert.equal((await stored()).site.name, 'Preserved draft content');
     // Even a draft carrying a valid base must not publish across a schema change.
     await page.locator('#discard-draft').click();
+    await page.waitForFunction(() => document.querySelector('#publish-conflict').hidden);
     await page.locator('[data-panel="settings"]').click();
     await field.fill('Incompatible schema remains recoverable'); await save();
-    await page.evaluate(key => {
-      const draft=JSON.parse(localStorage.getItem(key));
-      draft.site.schemaVersion=999;
-      localStorage.setItem(key,JSON.stringify(draft));
-    },key);
+    await page.evaluate(key => new Promise((resolve, reject) => {
+      const opening = indexedDB.open('mayin-studio', 1);
+      opening.onerror = () => reject(opening.error);
+      opening.onsuccess = () => {
+        const db = opening.result;
+        const tx = db.transaction('drafts', 'readwrite');
+        const store = tx.objectStore('drafts');
+        const reading = store.get(key);
+        reading.onsuccess = () => { const draft = reading.result; draft.site.schemaVersion = 999; store.put(draft, key); };
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      };
+    }), key);
     await page.reload(); await ready();
     pending=null; await page.locator('#publish').click();
     assert.equal(pending,null,'An incompatible schema reached the publish endpoint');

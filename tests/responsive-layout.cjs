@@ -219,6 +219,20 @@ const server = http.createServer(async(req,res) => {
     // Device previews use real logical dimensions even when editor panels consume space.
     await page.goto(base+'/admin/');
     await page.locator('#studio:visible').waitFor();
+    const stored=()=>page.evaluate(()=>new Promise((resolve,reject)=>{
+      const opening=indexedDB.open('mayin-studio',1);
+      opening.onerror=()=>reject(opening.error);
+      opening.onsuccess=()=>{
+        const db=opening.result;
+        const reading=db.transaction('drafts','readonly').objectStore('drafts').get('mayin-studio-draft');
+        reading.onsuccess=()=>{db.close();resolve(reading.result||null);};
+        reading.onerror=()=>{db.close();reject(reading.error);};
+      };
+    }));
+    const waitStored=async predicate=>{
+      for(let i=0;i<80;i++){const draft=await stored();if(predicate(draft))return draft;await page.waitForTimeout(100);}
+      throw new Error('Draft was not persisted in IndexedDB');
+    };
     const preview=()=>page.frames().find(frame=>frame.parentFrame());
     await page.waitForFunction(()=>document.querySelector('#preview').contentWindow.innerWidth===1440);
     for(const [mode,width] of [['tablet',820],['mobile',390],['desktop',1440]]){
@@ -259,18 +273,19 @@ const server = http.createServer(async(req,res) => {
     await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.textContent==='0123456789');
     await page.locator('#redo').click();
     await preview().waitForFunction(()=>document.querySelector('figcaption[data-edit-inline]')?.textContent.length===12);
-    await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('mayin-studio-draft'))?.projects?.[0]?.media?.[0]?.caption==='0123XY456789'}catch{return false}});
+    await waitStored(draft=>draft?.projects?.[0]?.media?.[0]?.caption==='0123XY456789');
     await editableCaption.click();
     const font=page.locator('#inspector [data-path$=".fontFamily"]');
     await font.selectOption('mono');
     const captionSize=page.locator('#inspector [data-path$=".fontSize"]');
     await captionSize.fill('31');
     await preview().waitForFunction(()=>getComputedStyle(document.querySelector('figcaption[data-edit-inline]')).fontSize==='31px');
-    await page.waitForFunction(()=>{try{return Object.values(JSON.parse(localStorage.getItem('mayin-studio-draft'))?.site?.elementStyles||{}).some(style=>style.fontFamily==='mono'&&Number(style.fontSize)===31)}catch{return false}});
-    const savedDraft=await page.evaluate(()=>JSON.parse(localStorage.getItem('mayin-studio-draft')));
+    const savedDraft=await waitStored(draft=>Object.values(draft?.site?.elementStyles||{}).some(style=>style.fontFamily==='mono'&&Number(style.fontSize)===31));
     await page.reload();
     await page.locator('#studio:visible').waitFor();
-    const restoredDraft=await page.evaluate(()=>JSON.parse(localStorage.getItem('mayin-studio-draft')));
+    await page.locator('#draft-choice:visible').waitFor();
+    await page.locator('#resume-stored-draft').click();
+    const restoredDraft=await stored();
     assert.deepEqual(restoredDraft.projects,savedDraft.projects,'Reload changed draft projects');
     for(const [id,style] of Object.entries(savedDraft.site.elementStyles)){const restored=restoredDraft.site.elementStyles[id]||{};assert.deepEqual(Object.fromEntries(Object.keys(style).map(key=>[key,restored[key]])),style,'Reload changed existing draft style '+id);}
     assert.ok(!errors.length,errors.join('\n'));

@@ -58,7 +58,10 @@
       "offsetY": -25,
       "blocks": [],
       "heroBlocks": [],
-      "id": "project-1xfrr3s"
+      "id": "project-1xfrr3s",
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "moooi-stand-commercial",
@@ -126,7 +129,10 @@
       "heroBlocks": [],
       "id": "project-15t1kl4",
       "offsetX": 0,
-      "positionY": -115
+      "positionY": 50,
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "amenagement-patisserie",
@@ -199,7 +205,10 @@
       "id": "project-l37hjt",
       "offsetY": -15,
       "offsetX": 25,
-      "positionY": 55
+      "positionY": 55,
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "table-hote-maison-privee",
@@ -301,7 +310,10 @@
       "offsetX": -130,
       "offsetY": 50,
       "id": "project-1iorjk8",
-      "positionY": 25
+      "positionY": 80,
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "tiers-lieu",
@@ -405,7 +417,10 @@
       ],
       "blocks": [],
       "heroBlocks": [],
-      "id": "project-jn1pq8"
+      "id": "project-jn1pq8",
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "maison-unifamiliale",
@@ -498,7 +513,11 @@
       "blocks": [],
       "heroBlocks": [],
       "width": 110,
-      "id": "project-lopfz"
+      "id": "project-lopfz",
+      "heroPresentation": {
+        "radius": "soft"
+      },
+      "positionY": 65
     },
     {
       "slug": "tables-gigognes",
@@ -529,7 +548,10 @@
       "coverKind": "cutout",
       "blocks": [],
       "heroBlocks": [],
-      "id": "project-1e5olro"
+      "id": "project-1e5olro",
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "lampe",
@@ -587,7 +609,10 @@
       "heroBlocks": [],
       "width": 95,
       "offsetY": 0,
-      "id": "project-km08hm"
+      "id": "project-km08hm",
+      "heroPresentation": {
+        "radius": "soft"
+      }
     },
     {
       "slug": "scenographie-minimaliste",
@@ -626,7 +651,11 @@
       "blocks": [],
       "heroBlocks": [],
       "offsetY": 40,
-      "id": "project-1vnhr94"
+      "id": "project-1vnhr94",
+      "heroPresentation": {
+        "radius": "soft"
+      },
+      "positionY": -105
     },
     {
       "slug": "scenographie-personnelle",
@@ -667,7 +696,10 @@
       "heroBlocks": [],
       "offsetX": 15,
       "id": "project-q9he67",
-      "positionY": -115
+      "positionY": -115,
+      "heroPresentation": {
+        "radius": "soft"
+      }
     }
   ]
 }

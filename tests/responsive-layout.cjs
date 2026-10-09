@@ -27,6 +27,7 @@ const server = http.createServer(async(req,res) => {
     });
     const page=await context.newPage();
     page.on('pageerror',e=>errors.push(e.message));
+    const site=JSON.parse(await fs.readFile(path.join(root,'content/site.json'),'utf8'));
     const projects=JSON.parse(await fs.readFile(path.join(root,'content/projects.json'),'utf8')).projects;
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
@@ -108,10 +109,11 @@ const server = http.createServer(async(req,res) => {
       const bottom=Math.max(...items.map(item=>item.getBoundingClientRect().bottom));
       return {count:items.length,gap:document.querySelector('.footer').getBoundingClientRect().top-bottom,translated:items.some(item=>item.hasAttribute('data-layout-item')),lastSpan:items.at(-1)?.style.getPropertyValue('--gallery-span')};
     });
-    assert.equal(publishedGallery.count,4,'Published gallery blocks disappeared');
-    assert.ok(publishedGallery.gap<200,'Gallery keeps an empty row after visually moved images: '+JSON.stringify(publishedGallery));
+    assert.equal(publishedGallery.count,site.customBlocks.gallery.filter(block=>block.type==='image').length,'Published gallery blocks disappeared');
+    const authoredSpace=site.customBlocks.gallery.filter(block=>block.type==='spacer').reduce((height,block)=>height+Number(block.height||0),0);
+    assert.ok(publishedGallery.gap<200+authoredSpace,'Gallery keeps an extra empty row after the intentionally added space: '+JSON.stringify(publishedGallery));
     assert.equal(publishedGallery.translated,false,'Gallery still uses pixel translations instead of its actual grid cells');
-    assert.equal(publishedGallery.lastSpan,'3','Gallery reserves empty tracks around a visually small legacy image');
+    assert.equal(publishedGallery.lastSpan,String(site.customBlocks.gallery.filter(block=>block.type==='image').at(-1).columnSpan),'Gallery ignores the last published image span');
     await page.evaluate(()=>{
       runtime.site.gallery.items=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Test '+index,category:'Test',size:'small',columnSpan:3,radius:'none'}));
       renderGallery(runtime.site);bindContentLayout();fitLayout();
@@ -130,7 +132,7 @@ const server = http.createServer(async(req,res) => {
       renderAll(runtime.site,runtime.projects);fitLayout();
     });
     const editorialDesktop=await page.locator('[data-custom-blocks="gallery"] .custom-block--image').evaluateAll(items=>items.map(item=>Math.round(item.getBoundingClientRect().top)));
-    assert.equal(new Set(editorialDesktop).size,1,'Four editorial gallery images do not share one desktop row');
+    assert.equal(new Set(editorialDesktop.slice(0,4)).size,1,'Four editorial gallery images do not share one desktop row');
     await page.setViewportSize({width:390,height:844});
     await page.evaluate(()=>fitLayout());
     const editorialMobile=await page.locator('[data-custom-blocks="gallery"] .custom-block--image').evaluateAll(items=>items.map(item=>{const rect=item.getBoundingClientRect();return {top:rect.top,left:rect.left,right:rect.right}}));

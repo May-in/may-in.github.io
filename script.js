@@ -517,7 +517,7 @@ function renderBlocks(blocks, basePath, extraClass = '') {
     const mobileBeforeIntro = basePath === 'site.customBlocks.home' && block.flowPlacement === 'before' ? ' custom-block--mobile-before' : '';
     const classes = `custom-block--align-${safeToken(block.align, 'left')} custom-block--${safeToken(block.format, 'original')}${mobileBeforeIntro}`;
     const style = `${imageStyle(block)};${blockStyle(block)}${gallery ? `;${galleryBlockStyle(block)}` : ''}`;
-    if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" draggable="false" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption>${gallery ? '<button class="gallery-drag-handle" type="button" draggable="true" aria-label="Déplacer cette image dans la galerie">↕ Déplacer</button>' : ''}</figure>`;
+    if (block.type === 'image') return `<figure class="custom-block custom-block--image ${classes} ${radiusClass(block.radius || 'soft')}" style="${style}" data-edit-path="${path}" data-edit-label="Bloc image"><img src="${assetSrc(block.src)}" alt="${escapeHtml(block.alt || block.caption || '')}" draggable="false" /><figcaption data-edit-path="${path}.caption" data-edit-label="Légende" data-edit-inline="true">${escapeHtml(block.caption || '')}</figcaption>${gallery ? '<button class="gallery-drag-handle" type="button" draggable="true" aria-label="Déplacer cette image dans la galerie (glisser ou utiliser les flèches)">↕ Déplacer</button>' : ''}</figure>`;
     if (block.type === 'quote') return `<blockquote class="custom-block custom-block--quote ${classes}" style="${style}" data-edit-path="${path}" data-edit-label="Citation"><p data-edit-path="${path}.text" data-edit-inline="true">${escapeHtml(block.text || 'Citation')}</p></blockquote>`;
     if (block.type === 'divider') return `<hr class="custom-block custom-block--divider" data-edit-path="${path}" data-edit-label="Séparateur" />`;
     if (block.type === 'spacer') return `<div class="custom-block custom-block--spacer" style="--space:${Math.max(20, Math.min(240, Number(block.height) || 80))}px" data-edit-path="${path}" data-edit-label="Espacement"></div>`;
@@ -711,6 +711,16 @@ if (isAdminPreview) {
   let selectedPreviewElement = null;
   let lastSelectionPoint = null;
   let draggingGalleryIndex = null;
+  document.addEventListener('keydown', (event) => {
+    const handle = event.target.closest?.('.gallery-drag-handle');
+    if (!previewEditMode || !handle || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
+    const figure = handle.closest('[data-edit-path^="site.customBlocks.gallery."]');
+    const from = Number(figure?.dataset.editPath.split('.').at(-1));
+    const to = from + (['ArrowLeft','ArrowUp'].includes(event.key) ? -1 : 1);
+    if (!Number.isInteger(from) || to < 0) return;
+    event.preventDefault();
+    window.parent.postMessage({type:'mayin:move-gallery',from,to},location.origin);
+  });
   document.addEventListener('dragstart', (event) => {
     const handle = event.target.closest?.('.gallery-drag-handle');
     if (!previewEditMode || !handle) return;

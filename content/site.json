@@ -533,7 +533,8 @@
       "align": "center"
     },
     "text-xf8yzi": {
-      "offsetY": -65
+      "offsetY": -65,
+      "fontSize": 145
     },
     "text-1ggreux": {
       "width": 100,

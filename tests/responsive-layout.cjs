@@ -30,7 +30,7 @@ const server = http.createServer(async(req,res) => {
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
     for (const url of paths) {
-      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=19"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
+      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=20"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
       await page.setViewportSize({width:1440,height:900});
       await page.goto(base+'/'+url);
       await page.waitForFunction(()=>runtime.site && document.querySelector('[data-layout-item]'));
@@ -118,6 +118,13 @@ const server = http.createServer(async(req,res) => {
     await page.waitForFunction(()=>runtime.projects.length && document.querySelector('.project-gallery'));
     await page.setViewportSize({width:1440,height:900});
     await page.evaluate(()=>{
+      runtime.projects[0].width=180;runtime.projects[0].offsetX=220;runtime.projects[0].objectPosition='left';
+      renderAll(runtime.site,runtime.projects);fitLayout();
+    });
+    const independentHero=await page.locator('.project-hero__visual').evaluate(el=>({width:el.style.getPropertyValue('--layout-width'),position:getComputedStyle(el.querySelector('img')).objectPosition,left:el.getBoundingClientRect().left}));
+    assert.equal(independentHero.width,'100%','Thumbnail width leaked into the project cover');
+    assert.equal(independentHero.position,'50% 50%','Thumbnail crop leaked into the project cover');
+    await page.evaluate(()=>{
       runtime.projects[0].media=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Projet '+index,kind:'detail',format:'landscape',columnSpan:3,width:100}));
       renderAll(runtime.site,runtime.projects);fitLayout();
     });
@@ -141,7 +148,8 @@ const server = http.createServer(async(req,res) => {
     // Extreme settings remain editable on desktop and collapse safely on compact screens.
     await page.goto(base+'/projets.html');
     await page.waitForFunction(()=>runtime.projects.length && document.querySelector('.project-cover-group'));
-    await page.evaluate(()=>{updatePreviewValue('projects.0.width',200);updatePreviewValue('projects.0.offsetX',1200);updatePreviewValue('projects.0.offsetY',150);fitLayout();});
+    await page.evaluate(()=>{updatePreviewValue('projects.0.width',200);updatePreviewValue('projects.0.offsetX',1200);updatePreviewValue('projects.0.offsetY',150);updatePreviewValue('projects.0.objectPosition','left');fitLayout();});
+    assert.equal(await page.locator('.project-card .project-image img').first().evaluate(el=>getComputedStyle(el).objectPosition),'0% 50%','Thumbnail crop control has no visible effect');
     const category=page.locator('.project-card').first().locator('.project-category');
     const categoryDelta=await category.evaluate(el=>el.getBoundingClientRect().top-el.previousElementSibling.getBoundingClientRect().bottom);
     await page.evaluate(()=>{updatePreviewValue('projects.0.offsetX',-1200);updatePreviewValue('projects.0.offsetY',-150);fitLayout();});

@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const { chromium } = require(process.argv[2] || 'playwright');
 const root = path.resolve(__dirname, '..');
 const key = 'mayin-studio-draft';
@@ -93,6 +94,8 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await page.setViewportSize({width:390,height:844});
     const warning = await page.locator('#draft-warning').boundingBox();
     assert.ok(warning.x >= 0 && warning.x + warning.width <= 390, 'Warning overflows phone');
+    pending = null; await page.locator('#publish').click();
+    assert.equal(pending, null, 'An unsaved draft was published before a backup was downloaded');
     const downloading = page.waitForEvent('download');
     await page.locator('#export-unsaved').click();
     const download = await downloading;
@@ -100,6 +103,8 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     for await (const chunk of stream) chunks.push(chunk);
     assert.equal(JSON.parse(Buffer.concat(chunks).toString()).site.name, 'Recoverable unsaved edit');
     await download.delete();
+    await startPublish(); await completePublish(500);
+    assert.equal(await field.inputValue(), 'Recoverable unsaved edit', 'Failed publication lost the backed-up in-memory draft');
     await page.evaluate(() => { Storage.prototype.setItem = window.restoreStorage; });
     await page.locator('#retry-save').click();
     assert.equal((await stored()).site.name, 'Recoverable unsaved edit');
@@ -158,6 +163,23 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     await startPublish(); await completePublish();
     await page.waitForTimeout(650); assert.equal(await stored(), null, 'Successful publication left a stale draft');
     await page.reload(); await ready(); assert.equal(await field.inputValue(), 'Newer edit B');
+    // Technical Studio releases must not make a recent editorial draft unpublishable.
+    await field.fill('Draft across a Studio release'); await save();
+    const inlineBase = (await stored())._publishedFingerprint;
+    assert.match(inlineBase, /^[a-f0-9]{64}$/, 'Draft and its source revision were not saved together');
+    published = { site:{ ...published.site, studioVersion:'1.9.1' }, projects:published.projects };
+    await page.reload(); await ready(); await startPublish(); await completePublish();
+    assert.equal(published.site.name, 'Draft across a Studio release');
+    // Migrate a legacy full-content fingerprint only when the version is the sole change.
+    const legacyPublished = structuredClone(published);
+    const legacyBase = createHash('sha256').update(JSON.stringify({ ...legacyPublished, site:{ ...legacyPublished.site, studioVersion:'1.8.0' } })).digest('hex');
+    await page.evaluate(({key, legacyPublished, legacyBase}) => {
+      localStorage.setItem(key, JSON.stringify({ ...legacyPublished, site:{ ...legacyPublished.site, studioVersion:'1.8.1', name:'Recovered legacy draft' }, _publishedFingerprint:legacyBase }));
+      localStorage.removeItem('mayin-studio-draft-base');
+    }, {key, legacyPublished, legacyBase});
+    published = { site:{ ...published.site, studioVersion:'1.9.2' }, projects:published.projects };
+    await page.reload(); await ready(); await startPublish(); await completePublish();
+    assert.equal(published.site.name, 'Recovered legacy draft');
     // A patch release must not reapply the older, one-off image orientation migration.
     await page.evaluate(({key, published}) => {
       published.site.studioVersion = '1.5.0';

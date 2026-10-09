@@ -61,6 +61,8 @@ main,section,figure,.project-card,.project-title-row,.project-meta,.footer-botto
 .large-link>span:last-child,.contact-link>span:last-child{flex:none;line-height:1}
 .project-hero__visual{position:relative;isolation:isolate}
 .project-hero img.project-hero__image{width:100%;object-position:var(--media-position,center);margin-inline:auto;transform:none}
+.project-hero__visual[data-layout-item]{margin-inline:auto}
+.project-cover-group .project-image img,.project-media img{object-position:var(--media-position,center)}
 .project-gallery,.gallery-grid,.custom-blocks{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:start;gap:clamp(24px,4vw,64px) clamp(14px,2.4vw,36px)}
 .project-media,.gallery-item,.custom-block{min-width:0;width:100%;margin:0;transform:none;justify-self:start}
 .project-media{grid-column:var(--media-start,auto)/span var(--media-span,8)}

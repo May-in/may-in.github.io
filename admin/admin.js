@@ -1,5 +1,5 @@
-import '../layout-model.js?v=4';
-const STUDIO_VERSION = '1.8.1';
+import '../layout-model.js?v=5';
+const STUDIO_VERSION = '1.9.0';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -44,6 +44,7 @@ let previewMode = 'edit';
 let saveTimer = 0;
 let draftDirty = false;
 let draftRevision = 0;
+let backupRevision = -1;
 let previewPatchFrame = 0;
 const pendingPreviewPatches = new Map();
 let toastTimer = 0;
@@ -77,10 +78,25 @@ function showToast(message, error = false) {
   clearTimeout(toastTimer); dom.toast.textContent = message; dom.toast.className = `toast is-visible${error ? ' is-error' : ''}`;
   toastTimer = setTimeout(() => dom.toast.className = 'toast', 3200);
 }
-async function contentFingerprint(value) {
-  const bytes = new TextEncoder().encode(JSON.stringify({ site:value.site, projects:value.projects }));
+async function contentFingerprint(value, includeStudioVersion = false) {
+  const site = { ...value.site };
+  if (!includeStudioVersion) delete site.studioVersion;
+  const bytes = new TextEncoder().encode(JSON.stringify({ site, projects:value.projects }));
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+async function draftOrigin(saved, fallback = '') {
+  if (!saved) return publishedFingerprint;
+  const base = saved?._publishedFingerprint || fallback;
+  if (!base || base === publishedFingerprint) return base;
+  // Older Studio releases hashed the technical version together with content.
+  // Rebase only if every other published field still matches exactly.
+  for (const version of new Set([saved.site?.studioVersion, '1.7.0', '1.7.1', '1.8.0', '1.8.1'])) {
+    if (!version) continue;
+    const candidate = { site:{ ...publishedData.site, studioVersion:version }, projects:publishedData.projects };
+    if (await contentFingerprint(candidate, true) === base) return publishedFingerprint;
+  }
+  return base;
 }
 function setSaveState(message) { dom.saveState.textContent = message; }
 function authHeaders(extra = {}) { return sessionToken ? { ...extra, Authorization:`Bearer ${sessionToken}` } : extra; }
@@ -97,8 +113,8 @@ function flushDraft() {
   if (!draftDirty || !data.site) return true;
   try {
     // setItem is atomic: a failed write must leave the preceding draft intact.
-    localStorage.setItem('mayin-studio-draft', JSON.stringify(data));
-    if (draftBaseFingerprint) localStorage.setItem(draftBaseKey, draftBaseFingerprint);
+    // Content and its source revision must be written atomically.
+    localStorage.setItem('mayin-studio-draft', JSON.stringify({ ...data, _publishedFingerprint:draftBaseFingerprint }));
     draftDirty = false; dom.draftWarning.hidden = true;
     setSaveState('Brouillon local · non publié');
     return true;
@@ -118,6 +134,7 @@ function exportBackup() {
   link.href = URL.createObjectURL(blob);
   link.download = `mayin-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;
   link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  backupRevision = draftRevision;
   showToast('Sauvegarde téléchargée');
 }
 function markChanged(refreshInspector = true, syncPreview = true, refreshLists = true) {
@@ -185,7 +202,7 @@ async function importBackup(file) {
     if (localStorage.getItem('mayin-studio-draft') && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
     data = upgradeDraftShape({ site:clone(restored.site), projects:clone(restored.projects) });
-    draftBaseFingerprint = restored._publishedFingerprint;
+    draftBaseFingerprint = await draftOrigin(restored);
     selectedPath = '';
     selectedStyleId = '';
     inlineSessionPath = '';
@@ -372,8 +389,8 @@ function renderProject(index) {
     ${field('Masquer ce projet', `${base}.hidden`, 'checkbox')}</div>
     <div class="form-section"><h3>Taille de la carte dans Projets</h3>${field('Largeur du cadre dans la page', `${base}.cardSpan`, 'select', { choices: [['','Composition automatique'],['4','Un tiers'],['6','Moitié'],['8','Deux tiers'],['10','Très grande'],['12','Pleine largeur']] })}${field('Alignement du cadre', `${base}.cardAlign`, 'select', { choices: [['start','Gauche'],['center','Centre'],['end','Droite']] })}<p class="form-note">Ce réglage agrandit réellement le cadre. Il reste automatiquement à la largeur de l’écran sur téléphone.</p></div>
     ${choices('Présentation de la couverture', `${base}.coverKind`, [['photo','Photo'],['cutout','Détourée']])}
-    ${choices('Coins de la couverture', `${base}.coverRadius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
-    <div class="form-section"><h3>Dimensions et cadrage</h3>${field('Largeur de l’image dans le cadre', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Cette largeur peut aller jusqu’à 200 %. Le déplacement vertical indépendant laisse le texte et les autres blocs à leur place.</p></div>
+    <div class="form-section"><h3>Miniature dans Projets</h3><p class="form-note">Ces réglages n’agissent que sur la miniature. La photo source reste commune.</p>${field('Largeur de l’image dans le cadre', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}${choices('Coins de la miniature', `${base}.coverRadius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}</div>
+    <div class="form-section"><h3>Image sur la page du projet</h3><p class="form-note">Cadrage indépendant de la miniature ; centrée par défaut.</p>${field('Largeur de la couverture', `${base}.heroPresentation.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.heroPresentation.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(`${base}.heroPresentation`)}${choices('Coins sur la page du projet', `${base}.heroPresentation.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}</div>
     <div class="form-section"><h3>Sur la couverture</h3><p class="form-note">Ajoute librement du texte ou une image par-dessus la couverture. La composition reste responsive.</p></div>${blockControls(`${base}.heroBlocks`)}${contentOutline(`${base}.heroBlocks`, project.heroBlocks || [], 'Éléments sur la couverture')}
     <div class="form-section"><h3>Images du projet (${project.media?.length || 0})</h3><div class="list-editor">${(project.media || []).map((item, mediaIndex) => `<button class="page-button" data-select-path="${base}.media.${mediaIndex}"><span>▧</span><span>${encode(item.caption || item.alt || `Image ${mediaIndex + 1}`)}</span></button>`).join('')}</div><button class="button" data-add-project-image="${index}">+ Ajouter une image</button></div>
     ${contentOutline(`${base}.media`, project.media || [], 'Ordre des images')}${blockControls(`${base}.blocks`)}${contentOutline(`${base}.blocks`, project.blocks || [], 'Ordre des blocs')}<div class="form-section"><h3>Organisation</h3><div class="field-row"><button class="button" data-move-path="projects.${index}" data-delta="-1">↑ Monter</button><button class="button" data-move-path="projects.${index}" data-delta="1">↓ Descendre</button></div><button class="button" data-duplicate-project="${index}">Dupliquer le projet</button></div><button class="danger-button" data-delete-project="${index}">Supprimer ce projet</button>`;
@@ -509,7 +526,7 @@ async function publish() {
   if (dom.publish.disabled) return;
   try {
     // Save the local recovery copy before starting a potentially slow request.
-    if (!flushDraft()) return;
+    if (!flushDraft() && backupRevision !== draftRevision) return;
     const submittedRevision = draftRevision;
     dom.publish.disabled = true; dom.publish.textContent = 'Publication…'; setSaveState('Publication en cours…');
     const currentResponse = await fetch(`${apiBase}/api/content`, { cache:'no-store', headers:authHeaders() });
@@ -564,12 +581,12 @@ async function boot() {
     const fragment = new URLSearchParams(location.hash.slice(1));
     if (fragment.has('session')) { sessionToken = fragment.get('session'); sessionStorage.setItem('mayin-session', sessionToken); history.replaceState(null, '', location.pathname + location.search); }
     const publicData = await loadPublicData();
-    if (localMode) { data = publicData; publishedData = clone(publicData); publishedFingerprint = await contentFingerprint(publishedData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? localStorage.getItem(draftBaseKey) || '' : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
+    if (localMode) { data = publicData; publishedData = clone(publicData); publishedFingerprint = await contentFingerprint(publishedData); currentUser = { login:'local' }; const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? await draftOrigin(JSON.parse(draft), localStorage.getItem(draftBaseKey) || '') : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publicData); draftDirty = true; flushDraft(); } return showStudio(); }
     if (!apiBase || apiBase.includes('REMPLACER')) return showLogin();
     const auth = await fetch(`${apiBase}/auth/me`, { headers:authHeaders() }); if (!auth.ok) return showLogin();
     const account = await auth.json(); currentUser = account.user; csrf = account.csrf;
     const response = await fetch(`${apiBase}/api/content`, { headers:authHeaders() }); if (!response.ok) throw new Error('Contenu inaccessible');
-    data = await response.json(); publishedData = clone(data); publishedFingerprint = await contentFingerprint(publishedData); const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? localStorage.getItem(draftBaseKey) || '' : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
+    data = await response.json(); publishedData = clone(data); publishedFingerprint = await contentFingerprint(publishedData); const draft = localStorage.getItem('mayin-studio-draft'); draftBaseFingerprint = draft ? await draftOrigin(JSON.parse(draft), localStorage.getItem(draftBaseKey) || '') : publishedFingerprint; if (draft) { data = upgradeDraftShape(JSON.parse(draft), publishedData); draftDirty = true; flushDraft(); }
     showStudio();
   } catch (error) { console.error(error); showLogin(); showToast('Le service d’administration n’est pas encore disponible', true); }
 }

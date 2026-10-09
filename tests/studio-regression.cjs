@@ -108,7 +108,17 @@ const server = http.createServer(async (request, response) => {
     await page.locator('#inspector [data-choice-path="projects.0.coverRadius"][data-choice-value="all"]').click();
     await page.waitForTimeout(100);
     const coverAfter = await cover.evaluate((element) => getComputedStyle(element).borderTopLeftRadius);
-    assert.notEqual(coverAfter, coverBefore, 'Cover corners were not previewed live');
+    assert.equal(coverAfter, coverBefore, 'Changing thumbnail corners also changed the project cover');
+    await page.locator('#inspector [data-choice-path="projects.0.heroPresentation.radius"][data-choice-value="all"]').click();
+    await page.waitForTimeout(100);
+    assert.notEqual(await cover.evaluate(element => getComputedStyle(element).borderTopLeftRadius), coverBefore, 'Project cover corners were not previewed live');
+    const heroFrame = frame.locator('.project-hero__visual');
+    await page.locator('#inspector [data-path="projects.0.width"]').fill('150');
+    assert.equal(await heroFrame.evaluate(element => element.style.getPropertyValue('--layout-width')), '100%', 'Thumbnail width changed the project page cover');
+    await page.locator('#inspector [data-path="projects.0.heroPresentation.width"]').fill('85');
+    await page.waitForFunction(() => document.querySelector('#preview').contentDocument.querySelector('.project-hero__visual')?.style.getPropertyValue('--layout-width') === '85%');
+    assert.equal(await heroFrame.evaluate(element => element.style.getPropertyValue('--layout-width')), '85%', 'Project cover width did not update independently');
+    assert.equal(await frame.locator('body').evaluate(() => runtime.projects[0].width), 150, 'Changing project cover width changed the thumbnail');
     await page.locator('#page-list [data-page="gallery"]').click();
     await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
     const arrangement = page.locator('#inspector [data-arrange-images="site.customBlocks.gallery"][data-columns="4"]');

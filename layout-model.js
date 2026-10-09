@@ -39,6 +39,8 @@
   function ensureIds(data) {
     identify(data.projects, 'project');
     (data.projects || []).forEach(project => {
+      project.heroPresentation ||= {};
+      project.heroPresentation.radius ??= project.coverRadius || 'soft';
       identify(project.media, 'media');
       identify(project.blocks, 'block');
       identify(project.heroBlocks, 'hero');

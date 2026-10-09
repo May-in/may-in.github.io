@@ -2,7 +2,7 @@ const topbar = document.querySelector('.topbar');
 const menuToggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.navigation');
 const page = document.body.dataset.page;
-const BUILD_VERSION = '1.8.0';
+const BUILD_VERSION = '1.9.0';
 const previewParams = new URLSearchParams(location.search);
 const isAdminPreview = previewParams.get('admin-preview') === '1' && window.parent !== window;
 let previewEditMode = true;
@@ -480,7 +480,7 @@ function renderProjectPage(projects) {
   let projectSchema = document.querySelector('#project-structured-data');
   if (!projectSchema) { projectSchema = document.createElement('script'); projectSchema.id = 'project-structured-data'; projectSchema.type = 'application/ld+json'; document.head.append(projectSchema); }
   projectSchema.textContent = JSON.stringify({ '@context':'https://schema.org', '@type':'CreativeWork', name:project.title, description:project.description, url:projectUrl, image:project.cover ? `${runtime.site.domain.replace(/\/$/, '')}/${project.cover.replace(/^\//, '')}` : undefined, creator:{ '@type':'Person', name:runtime.site.creatorName || 'Célia May' }, about:['Architecture intérieure','Design','Scénographie'] });
-  const heroRadius = radiusClass(project.coverRadius || 'soft');
+  const heroRadius = radiusClass(project.heroPresentation.radius || 'soft');
   const hero = project.cover ? `<img class="project-hero__image${project.coverKind === 'cutout' ? ' project-hero__image--cutout' : ''} ${heroRadius}" src="${assetSrc(project.cover)}" alt="${escapeHtml(project.title)}" fetchpriority="high" data-edit-path="projects.${projectIndex}.cover" data-edit-label="Image de couverture" />` : '<div class="project-hero__empty">Image à ajouter</div>';
   const media = (project.media || []).map((item, mediaIndex) => {
     const placement = item.align || ['left', 'right', 'center'][mediaIndex % 3];
@@ -489,7 +489,7 @@ function renderProjectPage(projects) {
   }).join('');
   const blocks = renderBlocks(project.blocks || [], `projects.${projectIndex}.blocks`);
   const heroBlocks = renderBlocks(project.heroBlocks || [], `projects.${projectIndex}.heroBlocks`, 'custom-blocks--hero custom-blocks--cover');
-  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1><div class="project-hero__visual" data-layout-path="projects.${projectIndex}" style="${imageStyle(project)}">${hero}<div class="hero-block-zone hero-block-zone--cover">${heroBlocks}</div></div></section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
+  content.innerHTML = `<section class="project-hero"><a class="project-back" href="projets.html">← <span data-edit-path="site.projectBackLabel" data-edit-label="Retour aux projets" data-edit-inline="true">${escapeHtml(runtime.site.projectBackLabel)}</span></a><p class="eyebrow"><span data-edit-path="site.projectTypeLabel" data-edit-label="Libellé du projet" data-edit-inline="true">${escapeHtml(runtime.site.projectTypeLabel)}</span> <span data-edit-path="site.${project.category === 'public' ? 'publicLabel' : 'privateLabel'}" data-edit-label="Catégorie" data-edit-inline="true">${escapeHtml(categoryLabel(project.category))}</span></p><h1 data-edit-path="projects.${projectIndex}.title" data-edit-label="Titre du projet" data-edit-inline="true">${escapeHtml(project.title)}</h1><div class="project-hero__visual" data-layout-path="projects.${projectIndex}.heroPresentation" style="${imageStyle(project.heroPresentation)}">${hero}<div class="hero-block-zone hero-block-zone--cover">${heroBlocks}</div></div></section><section class="project-copy"><p class="eyebrow" data-edit-path="site.projectSummaryLabel" data-edit-label="Titre du résumé" data-edit-inline="true">${escapeHtml(runtime.site.projectSummaryLabel)}</p><div><p class="lead" data-edit-path="projects.${projectIndex}.description" data-edit-label="Description" data-edit-inline="true">${escapeHtml(project.description)}</p></div></section>${blocks}<section class="project-gallery">${media}<a href="projets.html" class="large-link"><span data-edit-path="site.projectAllLabel" data-edit-label="Lien vers les projets" data-edit-inline="true">${escapeHtml(runtime.site.projectAllLabel)}</span> <span>↗</span></a></section>`;
 }
 
 function renderGallery(site) {
@@ -613,19 +613,21 @@ function updatePreviewValue(path, value) {
     return;
   }
   const coverMatch = path.match(/^projects\.(\d+)\.(cover|coverKind|coverRadius|width|cardSpan|cardAlign|objectPosition|offsetX|offsetY|positionY)$/);
-  if (coverMatch) {
-    const project = runtime.projects[Number(coverMatch[1])];
-    const hero = document.querySelector(`.project-hero__image[data-edit-path="projects.${coverMatch[1]}.cover"]`);
-    const card = document.querySelector(`[data-edit-path="projects.${coverMatch[1]}"]`);
-    if (hero) {
-      if (coverMatch[2] === 'cover') hero.src = assetSrc(project.cover);
-      hero.parentElement.style.cssText = imageStyle(project);
-      bindLayout(hero.parentElement, project);
+  const heroMatch = path.match(/^projects\.(\d+)\.heroPresentation\.(width|objectPosition|offsetX|offsetY|positionY|radius)$/);
+  if (coverMatch || heroMatch) {
+    const index = Number((coverMatch || heroMatch)[1]);
+    const project = runtime.projects[index];
+    const hero = document.querySelector(`.project-hero__image[data-edit-path="projects.${index}.cover"]`);
+    const card = document.querySelector(`[data-edit-path="projects.${index}"]`);
+    if (hero && (heroMatch || ['cover','coverKind'].includes(coverMatch?.[2]))) {
+      if (coverMatch?.[2] === 'cover') hero.src = assetSrc(project.cover);
+      hero.parentElement.style.cssText = imageStyle(project.heroPresentation);
+      bindLayout(hero.parentElement, project.heroPresentation);
       hero.classList.toggle('project-hero__image--cutout', project.coverKind === 'cutout');
       hero.classList.remove('radius-none', 'radius-soft', 'radius-top-right', 'radius-diagonal', 'radius-all', 'radius-pill');
-      hero.classList.add(radiusClass(project.coverRadius || 'soft'));
+      hero.classList.add(radiusClass(project.heroPresentation.radius || 'soft'));
     }
-    if (card) {
+    if (card && coverMatch) {
       const image = card.querySelector('.project-image');
       const group = card.querySelector('.project-cover-group');
       if (group) { group.style.cssText = imageStyle(project); bindLayout(group, project); }

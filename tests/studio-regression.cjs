@@ -111,9 +111,9 @@ const server = http.createServer(async (request, response) => {
     assert.notEqual(coverAfter, coverBefore, 'Cover corners were not previewed live');
     await page.locator('#page-list [data-page="gallery"]').click();
     await frame.locator('[data-custom-blocks="gallery"] .custom-block').first().waitFor();
-    await page.locator('#inspector [data-select-path="site.customBlocks.gallery.3"]').click();
     const arrangement = page.locator('#inspector [data-arrange-images="site.customBlocks.gallery"][data-columns="4"]');
     await arrangement.waitFor();
+    assert.match(await page.locator('#inspector').innerText(), /Le curseur vertical ajuste une image/, 'Gallery page does not explain the difference between placement and line composition');
     const previousGallery = await frame.locator('body').evaluate(() => JSON.stringify(runtime.site.customBlocks.gallery));
     await arrangement.click();
     await page.waitForFunction(() => {

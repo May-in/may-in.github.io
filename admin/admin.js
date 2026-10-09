@@ -1,5 +1,5 @@
 import '../layout-model.js?v=4';
-const STUDIO_VERSION = '1.8.0';
+const STUDIO_VERSION = '1.8.1';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -315,7 +315,7 @@ function responsiveWidthField(path, allowSmallSpans = false) {
 function imageArrangementControls(listPath) {
   const images = getPath(listPath)?.filter(item => item && (item.type === 'image' || item.src)) || [];
   if (images.length < 2) return '';
-  return `<div class="form-section"><h3>Composer la ligne</h3><p class="form-note">Répartit les ${images.length} images de cette section dans la grille, sans changer leur ordre ni leur contenu. Les anciens décalages sont remis à zéro ; Annuler permet de retrouver la composition précédente.</p><div class="field-row">${[2,3,4,6].map(count => `<button class="button" type="button" data-arrange-images="${listPath}" data-columns="${count}">${count} par ligne</button>`).join('')}</div></div>`;
+  return `<div class="form-section"><h3>Images par ligne · ordinateur</h3><p class="form-note">Choisis combien d’images placer côte à côte. Le curseur vertical ajuste une image dans sa place, mais ne la fait pas changer de ligne. Sur téléphone, les images s’empilent. Ce choix ne change ni les photos ni leur ordre ; Annuler retrouve la composition précédente.</p><div class="field-row">${[2,3,4,6].map(count => `<button class="button" type="button" data-arrange-images="${listPath}" data-columns="${count}">${count} par ligne</button>`).join('')}</div></div>`;
 }
 function nextImageSpan(items, fallback) {
   const previous = [...items].reverse().find(item => item && (item.type === 'image' || item.src));
@@ -448,7 +448,7 @@ function renderPagePanel(pageId) {
   const heading = pageId === 'notFound' ? 'Page 404' : `Page ${definition?.label || ''}`;
   const base = `site.customBlocks.${pageId}`; const blocks = getPath(base) || [];
   const heroBase = `site.customBlocks.${pageId}Hero`; const heroBlocks = getPath(heroBase) || [];
-  dom.inspector.innerHTML = `<div class="form-section"><h3>${encode(heading)}</h3><p class="empty-state">Clique directement sur un texte ou une image dans la page pour le modifier.</p></div><div class="form-section"><h3>En-tête / sur le visuel</h3><p class="form-note">Ces éléments peuvent être placés sur la zone d’en-tête, y compris sur l’image d’accueil.</p></div>${blockControls(heroBase)}${contentOutline(heroBase, heroBlocks, 'Éléments de l’en-tête')}<div class="form-section"><h3>Contenu libre de la page</h3><p class="form-note">Compose des lignes de une, deux ou trois colonnes. Le téléphone les empile automatiquement.</p></div>${blockControls(base)}${contentOutline(base, blocks, 'Ordre des blocs')}`;
+  dom.inspector.innerHTML = `<div class="form-section"><h3>${encode(heading)}</h3><p class="empty-state">Clique directement sur un texte ou une image dans la page pour le modifier.</p></div>${pageId === 'gallery' ? imageArrangementControls(base) : ''}<div class="form-section"><h3>En-tête / sur le visuel</h3><p class="form-note">Ces éléments peuvent être placés sur la zone d’en-tête, y compris sur l’image d’accueil.</p></div>${blockControls(heroBase)}${contentOutline(heroBase, heroBlocks, 'Éléments de l’en-tête')}<div class="form-section"><h3>Contenu libre de la page</h3><p class="form-note">La place dans la ligne organise les blocs sur ordinateur ; sur téléphone, ils s’empilent automatiquement.</p></div>${blockControls(base)}${contentOutline(base, blocks, 'Ordre des blocs')}`;
 }
 function renderEmpty() { dom.inspectorTitle.textContent = 'Propriétés'; dom.inspector.innerHTML = '<div class="empty-state"><span>✦</span><p>Sélectionne un texte, une image ou un projet dans la prévisualisation.</p></div>'; }
 function renderInspector() {

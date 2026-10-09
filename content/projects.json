@@ -516,7 +516,8 @@
       "id": "project-lopfz",
       "heroPresentation": {
         "radius": "soft"
-      }
+      },
+      "positionY": 65
     },
     {
       "slug": "tables-gigognes",

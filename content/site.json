@@ -579,32 +579,34 @@
     },
     "text-1pha8nd": {
       "offsetX": -20,
-      "offsetY": 35
+      "offsetY": 35,
+      "positionY": 145
     },
     "text-11l8kcl": {
       "offsetX": 100,
-      "offsetY": -795
+      "offsetY": -795,
+      "positionY": 170
     },
     "text-1dhsm3t": {
       "offsetY": 45,
       "offsetX": -35,
       "width": 80,
-      "positionY": 455
+      "positionY": 520
     },
     "text-13vpu05": {
       "offsetY": -495,
       "offsetX": 105,
-      "positionY": 90
+      "positionY": 550
     },
     "text-1kwndoz": {
       "offsetY": 90,
       "offsetX": -35,
-      "positionY": -155
+      "positionY": -15
     },
     "text-6raoz": {
       "offsetX": 40,
       "offsetY": 25,
-      "positionY": 0
+      "positionY": 50
     },
     "text-1pgjy59": {
       "offsetY": 55,

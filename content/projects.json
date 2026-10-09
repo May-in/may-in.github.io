@@ -129,7 +129,7 @@
       "heroBlocks": [],
       "id": "project-15t1kl4",
       "offsetX": 0,
-      "positionY": -115,
+      "positionY": 50,
       "heroPresentation": {
         "radius": "soft"
       }
@@ -310,7 +310,7 @@
       "offsetX": -130,
       "offsetY": 50,
       "id": "project-1iorjk8",
-      "positionY": 25,
+      "positionY": 80,
       "heroPresentation": {
         "radius": "soft"
       }

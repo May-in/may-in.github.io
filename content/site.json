@@ -158,6 +158,15 @@
         "positionY": -735,
         "offsetX": 330,
         "id": "block-1pru3kv"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791542645465-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": 3
       }
     ],
     "about": [
@@ -647,14 +656,14 @@
     },
     "text-1q2j0b": {
       "offsetY": -40,
-      "offsetX": -25,
+      "offsetX": -170,
       "width": 75,
-      "positionY": 130
+      "positionY": 50
     },
     "text-1lyr4qz": {
       "offsetX": 105,
       "offsetY": -130,
-      "positionY": 155
+      "positionY": 0
     },
     "text-oszln3": {
       "offsetY": -50,

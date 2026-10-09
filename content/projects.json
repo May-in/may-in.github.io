@@ -653,7 +653,8 @@
       "id": "project-1vnhr94",
       "heroPresentation": {
         "radius": "soft"
-      }
+      },
+      "positionY": -105
     },
     {
       "slug": "scenographie-personnelle",

@@ -102,8 +102,9 @@
         "textColor": "accent",
         "columnSpan": "",
         "spacing": 0,
-        "positionY": 25,
-        "flowPlacement": "before"
+        "positionY": 130,
+        "flowPlacement": "before",
+        "padding": 28
       }
     ],
     "projects": [],
@@ -260,38 +261,100 @@
         "id": "block-2qpq30"
       },
       {
-        "width": 100,
-        "columnSpan": 12,
-        "align": "left",
-        "spacing": 36,
-        "textAlign": "left",
-        "fontFamily": "sans",
-        "fontSize": 18,
-        "textColor": "inherit",
-        "surface": "none",
-        "padding": 0,
-        "minHeight": 0,
+        "type": "image",
+        "src": "assets/uploads/1791618401821-4-src.webp",
+        "alt": "",
+        "caption": "",
         "radius": "soft",
-        "type": "spacer",
-        "height": 240,
-        "id": "block-gxt2yv"
+        "width": 80,
+        "columnSpan": 3,
+        "id": "block-fchlgj"
       },
       {
-        "width": 100,
-        "columnSpan": 12,
-        "align": "left",
-        "spacing": 36,
-        "textAlign": "left",
-        "fontFamily": "sans",
-        "fontSize": 18,
-        "textColor": "inherit",
-        "surface": "none",
-        "padding": 0,
-        "minHeight": 0,
+        "type": "image",
+        "src": "assets/uploads/1791618401822-5-src.webp",
+        "alt": "",
+        "caption": "",
         "radius": "soft",
-        "type": "spacer",
-        "height": 210,
-        "id": "block-6wwk23"
+        "width": 85,
+        "columnSpan": "3",
+        "id": "block-e4z7kg"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-6-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": 3,
+        "id": "block-ytz1vj"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-7-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "3",
+        "id": "block-13hhhqc"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-8-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "6",
+        "id": "block-dv60b7"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-9-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "6",
+        "id": "block-17ntlx1"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-10-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "3"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-11-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "3"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-12-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "3"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791618401822-13-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "soft",
+        "width": 100,
+        "columnSpan": "3"
       }
     ],
     "about": [
@@ -756,7 +819,9 @@
     "text-1cwp96c": {
       "offsetY": 40,
       "offsetX": 65,
-      "positionY": -105
+      "positionY": -115,
+      "minHeight": 0,
+      "padding": 16
     },
     "text-14f590w": {
       "offsetX": 85,
@@ -813,13 +878,15 @@
     },
     "text-11hxcew": {
       "offsetY": -155,
-      "offsetX": 795,
+      "offsetX": 940,
       "textAlign": "justify",
-      "width": 25
+      "width": 25,
+      "positionY": -315
     },
     "text-1g0ha80": {
       "offsetY": 25,
-      "offsetX": 50
+      "offsetX": 50,
+      "width": 75
     },
     "text-3renwf": {
       "textColor": "accent"
@@ -853,20 +920,26 @@
     },
     "text-1k0qgc0": {
       "offsetY": -235,
-      "offsetX": 485,
-      "textAlign": "justify"
+      "offsetX": 615,
+      "textAlign": "justify",
+      "positionY": -90
     },
     "text-iexoyp": {
       "offsetY": 25,
-      "offsetX": 50
+      "offsetX": 195,
+      "width": 55
     },
     "text-1u3jvzy": {
-      "textColor": "accent"
+      "textColor": "accent",
+      "width": 60,
+      "offsetX": 80
     },
     "text-1lzr8f4": {
       "textColor": "accent",
       "offsetY": 0,
-      "offsetX": 40
+      "offsetX": 680,
+      "width": 60,
+      "positionY": -315
     },
     "text-1cg49q6": {
       "offsetX": 275,
@@ -903,7 +976,8 @@
       "textColor": "accent",
       "width": 45,
       "offsetX": 380,
-      "offsetY": -40
+      "offsetY": -40,
+      "positionY": 90
     },
     "text-14kq6n5": {
       "offsetY": -220,
@@ -943,16 +1017,19 @@
     },
     "text-31yjst": {
       "offsetY": -235,
-      "offsetX": 755,
+      "offsetX": 990,
       "textAlign": "justify",
-      "width": 60
+      "width": 35,
+      "positionY": -40
     },
     "text-173ugcr": {
       "offsetY": 25,
-      "offsetX": 50
+      "offsetX": 50,
+      "width": 80
     },
     "text-1nep7hb": {
-      "textColor": "accent"
+      "textColor": "accent",
+      "textAlign": "justify"
     },
     "text-11w54q3": {
       "textColor": "accent",
@@ -985,8 +1062,9 @@
     },
     "text-1v3qjb5": {
       "offsetY": -235,
-      "offsetX": 980,
-      "textAlign": "justify"
+      "offsetX": 405,
+      "textAlign": "justify",
+      "positionY": -65
     },
     "text-70786x": {
       "offsetY": 25,
@@ -1026,8 +1104,10 @@
     },
     "text-1c84u87": {
       "offsetY": -235,
-      "offsetX": 625,
-      "textAlign": "justify"
+      "offsetX": 850,
+      "textAlign": "justify",
+      "width": 70,
+      "positionY": -90
     },
     "text-vi7ygj": {
       "offsetY": 25,
@@ -1064,7 +1144,7 @@
     },
     "text-1qpcs91": {
       "offsetY": -390,
-      "offsetX": 785,
+      "offsetX": 860,
       "textAlign": "justify",
       "width": 40
     },

@@ -26,9 +26,10 @@
           "caption": "Vue de l'entrée, inspirée de la forme d'une roulotte. Une séparation fonctionnelle toute en douceur entre l'extérieur et une bulle permettant la relaxation, l'étude et l'amusement. ",
           "format": "portrait",
           "align": "center",
-          "offsetX": 0,
+          "offsetX": -90,
           "offsetY": 15,
-          "id": "media-6dw40"
+          "id": "media-6dw40",
+          "positionY": 15
         },
         {
           "src": "assets/projects/01-kot-etudiant/09-maquette-piece-alpha.webp",
@@ -49,7 +50,7 @@
           "caption": "une palette de matériaux inspirée de la nature et de l'artisanat dans une démarche de récupération et de réappropriation des éléments.",
           "format": "portrait",
           "align": "center",
-          "offsetX": 300,
+          "offsetX": -340,
           "id": "media-ypimkr"
         }
       ],
@@ -509,7 +510,7 @@
         }
       ],
       "offsetY": 65,
-      "offsetX": 520,
+      "offsetX": 535,
       "objectPosition": "right",
       "blocks": [],
       "heroBlocks": [],
@@ -518,7 +519,7 @@
       "heroPresentation": {
         "radius": "soft"
       },
-      "positionY": 65
+      "positionY": 145
     },
     {
       "slug": "tables-gigognes",

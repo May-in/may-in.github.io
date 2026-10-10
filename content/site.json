@@ -206,7 +206,8 @@
         "caption": "",
         "radius": "pill",
         "width": 45,
-        "columnSpan": 6
+        "columnSpan": 6,
+        "id": "block-wgen5f"
       },
       {
         "type": "image",
@@ -215,7 +216,8 @@
         "caption": "",
         "radius": "pill",
         "width": 100,
-        "columnSpan": 3
+        "columnSpan": 3,
+        "id": "block-anuid9"
       },
       {
         "type": "image",
@@ -224,7 +226,38 @@
         "caption": "",
         "radius": "all",
         "width": 100,
-        "columnSpan": "6"
+        "columnSpan": "6",
+        "id": "block-sc6ic3"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791617261851-1-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "top-right",
+        "width": 85,
+        "columnSpan": "6",
+        "id": "block-2eyxnx"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791617261851-2-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "pill",
+        "width": 100,
+        "columnSpan": 3,
+        "id": "block-19kfuu7"
+      },
+      {
+        "type": "image",
+        "src": "assets/uploads/1791617261852-3-src.webp",
+        "alt": "",
+        "caption": "",
+        "radius": "none",
+        "width": 55,
+        "columnSpan": 6,
+        "id": "block-2qpq30"
       },
       {
         "width": 100,
@@ -257,7 +290,8 @@
         "minHeight": 0,
         "radius": "soft",
         "type": "spacer",
-        "height": 210
+        "height": 210,
+        "id": "block-6wwk23"
       }
     ],
     "about": [
@@ -267,12 +301,13 @@
         "alt": "",
         "caption": "",
         "radius": "soft",
-        "width": 45,
+        "width": 40,
         "offsetY": -485,
-        "offsetX": -15,
+        "offsetX": -90,
         "spacing": 0,
         "id": "block-1guydu4",
-        "positionY": -105
+        "positionY": -50,
+        "columnSpan": "12"
       },
       {
         "width": 65,
@@ -292,7 +327,7 @@
         "offsetY": 50,
         "offsetX": -15,
         "id": "block-1qct2yl",
-        "positionY": -170
+        "positionY": -130
       },
       {
         "width": 65,
@@ -312,7 +347,7 @@
         "offsetY": 185,
         "offsetX": -15,
         "id": "block-1qjsxit",
-        "positionY": -360
+        "positionY": -285
       },
       {
         "width": 100,
@@ -332,7 +367,7 @@
         "offsetY": 220,
         "offsetX": -15,
         "id": "block-13lil4l",
-        "positionY": -570
+        "positionY": -495
       }
     ],
     "contact": [],
@@ -844,14 +879,16 @@
     },
     "text-1f8lcjs": {
       "offsetY": -80,
-      "offsetX": -15,
+      "offsetX": 25,
       "textAlign": "justify",
       "width": 95,
-      "align": "left"
+      "align": "left",
+      "positionY": 90
     },
     "text-f9it8q": {
       "offsetY": 25,
-      "offsetX": 50
+      "offsetX": 50,
+      "width": 70
     },
     "text-18m0j59": {
       "textColor": "accent"

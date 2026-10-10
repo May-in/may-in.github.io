@@ -77,11 +77,12 @@
           "alt": "Vue latérale du stand Moooi",
           "caption": "Du damier, aux végétaux, en passant par les cascades d'eau, le papier peint, les miroirs ou la moquette moelleuse comme les nuages. Chaque détail est choisi pour mettre en avant les mobiliers ainsi que pour offrir une expérience sensible unique à chaque visiteur.",
           "format": "landscape",
-          "offsetX": 25,
+          "offsetX": 40,
           "id": "media-lzrxxg",
           "columnSpan": "8",
           "objectPosition": "left",
-          "offsetY": 155
+          "offsetY": 155,
+          "positionY": -105
         },
         {
           "src": "assets/projects/02-stand-moooi/08-fauteuil-cutout.png",

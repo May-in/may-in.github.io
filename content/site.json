@@ -860,7 +860,7 @@
     "text-oszln3": {
       "offsetY": -50,
       "offsetX": -65,
-      "positionY": 105
+      "positionY": 155
     },
     "text-1b5ajrr": {
       "offsetY": -155,
@@ -937,8 +937,8 @@
     "text-1lzr8f4": {
       "textColor": "accent",
       "offsetY": 0,
-      "offsetX": 680,
-      "width": 60,
+      "offsetX": 820,
+      "width": 35,
       "positionY": -315
     },
     "text-1cg49q6": {

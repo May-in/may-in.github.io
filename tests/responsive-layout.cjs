@@ -32,7 +32,7 @@ const server = http.createServer(async(req,res) => {
     const paths=['index.html','projets.html','galerie.html','a-propos.html','contact.html','404.html',...projects.map(p=>'project.html?slug='+encodeURIComponent(p.slug))];
     let checks=0;
     for (const url of paths) {
-      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=21"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
+      assert.match(await fs.readFile(path.join(root,url.split('?')[0]),'utf8'), /<link rel="stylesheet" href="dynamic\.css\?v=22"/, 'Composition stylesheet must load from HTML before JavaScript: '+url);
       await page.setViewportSize({width:1440,height:900});
       await page.goto(base+'/'+url);
       await page.waitForFunction(()=>runtime.site && document.querySelector('[data-layout-item]'));
@@ -107,13 +107,25 @@ const server = http.createServer(async(req,res) => {
     const publishedGallery=await page.evaluate(()=>{
       const items=[...document.querySelectorAll('[data-custom-blocks="gallery"] .custom-block--image')];
       const bottom=Math.max(...items.map(item=>item.getBoundingClientRect().bottom));
-      return {count:items.length,gap:document.querySelector('.footer').getBoundingClientRect().top-bottom,translated:items.some(item=>item.hasAttribute('data-layout-item')),lastSpan:items.at(-1)?.style.getPropertyValue('--gallery-span')};
+      const grid=document.querySelector('[data-custom-blocks="gallery"] .custom-blocks--gallery');
+      return {count:items.length,gap:document.querySelector('.footer').getBoundingClientRect().top-bottom,translated:items.some(item=>item.hasAttribute('data-layout-item')),lastSpan:items.at(-1)?.style.getPropertyValue('--gallery-span'),spacers:[...grid.querySelectorAll('.custom-block--spacer')].map(el=>({height:el.getBoundingClientRect().height,marginBottom:getComputedStyle(el).marginBottom})),gridGap:parseFloat(getComputedStyle(grid).rowGap),gridPadding:parseFloat(getComputedStyle(grid).paddingBottom),pagePadding:parseFloat(getComputedStyle(document.querySelector('.gallery-page')).paddingBottom)};
     });
     assert.equal(publishedGallery.count,site.customBlocks.gallery.filter(block=>block.type==='image').length,'Published gallery blocks disappeared');
     const authoredSpace=site.customBlocks.gallery.filter(block=>block.type==='spacer').reduce((height,block)=>height+Number(block.height||0),0);
-    assert.ok(publishedGallery.gap<200+authoredSpace,'Gallery keeps an extra empty row after the intentionally added space: '+JSON.stringify(publishedGallery));
+    const layoutAllowance=3*publishedGallery.gridGap+publishedGallery.gridPadding+publishedGallery.pagePadding+40;
+    assert.ok(publishedGallery.gap<authoredSpace+layoutAllowance,'Gallery keeps an extra empty row beyond authored spacers and normal layout spacing: '+JSON.stringify(publishedGallery));
     assert.equal(publishedGallery.translated,false,'Gallery still uses pixel translations instead of its actual grid cells');
     assert.equal(publishedGallery.lastSpan,String(site.customBlocks.gallery.filter(block=>block.type==='image').at(-1).columnSpan),'Gallery ignores the last published image span');
+    const spacerPreview=await page.evaluate(()=>{
+      const spacer=document.querySelector('[data-custom-blocks="gallery"] .custom-block--spacer');
+      document.body.classList.add('admin-preview--edit');
+      const label=getComputedStyle(spacer,'::before').content;
+      const border=getComputedStyle(spacer).borderStyle;
+      document.body.classList.remove('admin-preview--edit');
+      return {label,border,height:spacer.dataset.spacerHeight,publicLabel:getComputedStyle(spacer,'::before').content};
+    });
+    assert.ok(spacerPreview.label.includes('Espace')&&spacerPreview.label.includes(spacerPreview.height)&&spacerPreview.border==='dashed','Spacer is invisible or unidentifiable in Studio edit mode: '+JSON.stringify(spacerPreview));
+    assert.equal(spacerPreview.publicLabel,'none','Spacer editor label leaked onto the public site');
     await page.evaluate(()=>{
       runtime.site.gallery.items=Array.from({length:4},(_,index)=>({src:'assets/social-preview.png',alt:'',caption:'Test '+index,category:'Test',size:'small',columnSpan:3,radius:'none'}));
       renderGallery(runtime.site);bindContentLayout();fitLayout();

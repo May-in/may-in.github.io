@@ -4,6 +4,10 @@ Mémo court des demandes explicites pour le site. Il sert de contexte et non de 
 
 ## Établi
 
+La dernière publication du Studio fait autorité pour les textes et images : synchroniser les fichiers locaux avant tout patch, sans rétablir un contenu plus ancien. Les brouillons restent distincts, repris seulement sur choix explicite ; refuser une version incompatible plutôt que la publier ou la fusionner silencieusement.
+
+Dans la galerie, permettre plus de trois petites images par ligne si l’espace le permet ; sur téléphone, conserver l’ordre et adapter automatiquement les dimensions. Les blocs distincts doivent rester sélectionnables et leur ordre, position et taille doivent avoir des réglages cohérents partout.
+
 May’in est la marque de Célia May ; l’ancien nom Célia Archi/Celiarchi ne doit plus structurer l’identité publique. Le site porte sur l’architecture d’intérieur, le design et la scénographie, avec un ton singulier, précis et sans texte générique, répétition ou slogan creux. Le logo, le favicon et les aperçus de partage doivent former une identité cohérente et porteuse de sens.
 
 Le domaine may-in.be a été acheté chez OVHcloud. Célia souhaite y faire pointer le site et son e-mail professionnel, tout en conservant l’hébergement gratuit du site si possible. Le mot « GitHub » ne doit apparaître sur aucune page du site ; le fournisseur peut rester utilisé en interne. Préserver l’accès au Studio et la messagerie pendant la migration.

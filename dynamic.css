@@ -110,6 +110,24 @@ main,section,figure,.project-card,.project-title-row,.project-meta,.footer-botto
 .admin-preview--edit .admin-selected{outline:2px solid var(--wine)!important;outline-offset:5px}
 .admin-preview--edit .custom-block--text,.admin-preview--edit .custom-block--quote{pointer-events:none}
 .admin-preview--edit .custom-block--text>*,.admin-preview--edit .custom-block--quote>*{pointer-events:auto}
+.admin-preview--edit .custom-block--spacer{
+ box-sizing:border-box;
+ border:1px dashed color-mix(in srgb,var(--wine) 58%,transparent);
+ border-radius:8px;
+ background:repeating-linear-gradient(135deg,transparent 0 12px,color-mix(in srgb,var(--wine) 5%,transparent) 12px 24px);
+ cursor:pointer;
+}
+.admin-preview--edit .custom-block--spacer::before{
+ content:"Espace " attr(data-spacer-height) " px · cliquer pour ajuster ou supprimer";
+ display:inline-block;
+ margin:10px;
+ padding:6px 9px;
+ border-radius:4px;
+ background:var(--paper);
+ color:var(--ink);
+ font:11px/1.3 var(--mono);
+ pointer-events:none;
+}
 .admin-image-handle{display:none}
 .admin-preview--edit .admin-image-handle{position:absolute;z-index:5;right:24px;bottom:24px;display:block;border:1px solid rgba(255,255,255,.55);border-radius:999px;padding:10px 14px;background:rgba(35,23,25,.78);color:#fff;font:500 10px var(--mono);cursor:pointer}
 

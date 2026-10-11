@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "name": "May’in",
   "creatorName": "Célia May",
   "role": "Portfolio étudiant · Architecture intérieure · Design · Scénographie",
@@ -1231,7 +1231,7 @@
       "positionY": -15
     }
   },
-  "studioVersion": "1.9.2",
+  "studioVersion": "1.9.3",
   "styleMigrations": {
     "page-home": true,
     "page-projects": true,

@@ -3,7 +3,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { createHash } = require('node:crypto');
 const { chromium } = require(process.argv[2] || 'playwright');
 const root = path.resolve(__dirname, '..');
 const key = 'mayin-studio-draft';
@@ -87,6 +86,13 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 
     await field.fill('Saved with keyboard'); await save();
     assert.equal((await stored()).site.name, 'Saved with keyboard');
+    await page.locator('[data-panel="dashboard"]').first().click();
+    await page.waitForFunction(() => [...document.querySelectorAll('.dashboard-card')].some(card => card.querySelector('span')?.textContent === 'Brouillon' && ['À publier','Modifications en cours'].includes(card.querySelector('strong')?.textContent)));
+    await page.locator('.project-row').first().click();
+    await page.locator('[data-project-media-index="0"]').first().click();
+    assert.match(await page.locator('#inspector').innerText(), /Description pour lecteur d’écran/);
+    assert.match(await page.locator('#inspector').innerText(), /n’est pas affiché comme une légende/);
+    await page.locator('[data-panel="settings"]').click();
     // The shortcut also works while focus is INSIDE the preview frame.
     const previewName = page.frameLocator('#preview').locator('.wordmark [data-edit-path="site.name"]');
     await previewName.click(); await page.keyboard.press('End'); await page.keyboard.type(' X');
@@ -199,61 +205,30 @@ const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
     published = { site:{ ...published.site, studioVersion:'1.9.1' }, projects:published.projects };
     await page.reload(); await ready(); await startPublish(); await completePublish();
     assert.equal(published.site.name, 'Draft across a Studio release');
-    // Migrate a legacy full-content fingerprint only when the version is the sole change.
-    const legacyPublished = structuredClone(published);
-    const legacyBase = createHash('sha256').update(JSON.stringify({ ...legacyPublished, site:{ ...legacyPublished.site, studioVersion:'1.8.0' } })).digest('hex');
-    await page.evaluate(({key, legacyPublished, legacyBase}) => {
-      localStorage.setItem(key, JSON.stringify({ ...legacyPublished, site:{ ...legacyPublished.site, studioVersion:'1.8.1', name:'Recovered legacy draft' }, _publishedFingerprint:legacyBase }));
-      localStorage.removeItem('mayin-studio-draft-base');
-    }, {key, legacyPublished, legacyBase});
-    published = { site:{ ...published.site, studioVersion:'1.9.2' }, projects:published.projects };
-    await page.reload(); await ready(); await startPublish(); await completePublish();
-    assert.equal(published.site.name, 'Recovered legacy draft');
-    // A patch release must not reapply the older, one-off image orientation migration.
+    // A draft from the old editing contract is never opened or migrated silently.
     await page.evaluate(({key, published}) => {
-      published.site.studioVersion = '1.5.0';
-      published.projects.find(p=>p.slug === 'moooi-stand-commercial').media.find(m=>m.src.endsWith('12-maquette-dessus-alpha.webp')).format = 'portrait';
-      localStorage.setItem(key, JSON.stringify(published));
+      localStorage.setItem(key, JSON.stringify({ ...published, site:{ ...published.site, schemaVersion:3, name:'Old format draft' }, _publishedFingerprint:'a'.repeat(64), _savedAt:Date.now() }));
     }, {key, published});
-    await page.reload(); await ready();
-    assert.equal((await stored()).projects.find(p=>p.slug === 'moooi-stand-commercial').media.find(m=>m.src.endsWith('12-maquette-dessus-alpha.webp')).format, 'portrait');
-    await page.evaluate(key => {
-      const draft = JSON.parse(localStorage.getItem(key));
-      draft.site.domain = 'https://may-in.github.io';
-      draft.site.name = 'Preserved draft content';
-      localStorage.setItem(key, JSON.stringify(draft));
-    }, key);
-    await page.reload(); await ready();
-    assert.equal(await page.locator('#inspector [data-path="site.domain"]').inputValue(), 'https://may-in.be', 'Old draft restored the former domain');
-    assert.equal(await field.inputValue(), 'Preserved draft content', 'Domain migration lost draft text');
     pending = null;
-    await page.locator('#publish').click();
-    await page.locator('#publish-conflict:visible').waitFor();
-    assert.equal(pending, null, 'A legacy draft without a known source overwrote newer published content');
-    assert.equal((await stored()).site.name, 'Preserved draft content');
-    // Even a draft carrying a valid base must not publish across a schema change.
-    await page.locator('#discard-draft').click();
-    await page.waitForFunction(() => document.querySelector('#publish-conflict').hidden);
+    await page.reload();
+    await page.locator('#draft-choice:visible').waitFor();
+    assert.equal(await page.locator('#resume-stored-draft').isDisabled(), true, 'Incompatible draft can still be opened');
+    assert.match(await page.locator('#draft-choice-description').innerText(), /version 3.*Studio actuel : 4/);
+    assert.equal((await stored()).site.name, 'Old format draft', 'Incompatible draft was deleted');
+    const oldDownload = page.waitForEvent('download');
+    await page.locator('#download-stored-draft').click();
+    const oldFile = await oldDownload;
+    const oldChunks=[];
+    for await (const chunk of await oldFile.createReadStream()) oldChunks.push(chunk);
+    assert.equal(JSON.parse(Buffer.concat(oldChunks).toString()).site.name, 'Old format draft');
+    await oldFile.delete();
+    assert.equal(await page.locator('#start-from-published').isEnabled(), true);
+    await page.locator('#start-from-published').click();
+    await page.locator('#draft-choice').waitFor({state:'hidden'});
     await page.locator('[data-panel="settings"]').click();
-    await field.fill('Incompatible schema remains recoverable'); await save();
-    await page.evaluate(key => new Promise((resolve, reject) => {
-      const opening = indexedDB.open('mayin-studio', 1);
-      opening.onerror = () => reject(opening.error);
-      opening.onsuccess = () => {
-        const db = opening.result;
-        const tx = db.transaction('drafts', 'readwrite');
-        const store = tx.objectStore('drafts');
-        const reading = store.get(key);
-        reading.onsuccess = () => { const draft = reading.result; draft.site.schemaVersion = 999; store.put(draft, key); };
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      };
-    }), key);
-    await page.reload(); await ready();
-    pending=null; await page.locator('#publish').click();
-    assert.equal(pending,null,'An incompatible schema reached the publish endpoint');
-    assert.equal((await stored()).site.name,'Incompatible schema remains recoverable','Rejected draft was deleted');
+    assert.equal(await field.inputValue(), published.site.name, 'Starting from published content loaded an incompatible draft');
+    assert.equal(pending, null, 'Incompatible draft reached the publish endpoint');
     assert.deepEqual(errors, []);
-    console.log('Draft reliability OK: rapid reload, keyboard/preview save, background save, quota recovery/export on phone, discard timer, concurrent edits, failed/expired/successful publication. No live writes.');
+    console.log('Draft reliability OK: save/recovery, stale publication conflict, incompatible schema export, and no live writes.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });

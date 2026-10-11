@@ -6,6 +6,8 @@ Mémo court des demandes explicites pour le site. Il sert de contexte et non de 
 
 La dernière publication du Studio fait autorité pour les textes et images : synchroniser les fichiers locaux avant tout patch, sans rétablir un contenu plus ancien. Les brouillons restent distincts, repris seulement sur choix explicite ; refuser une version incompatible plutôt que la publier ou la fusionner silencieusement.
 
+Brouillons : distinguer la structure du Studio (version de schéma à incrémenter si la logique d’édition/publication devient incompatible) et la révision du contenu publié. Un ancien schéma est inutilisable automatiquement ; un brouillon issu d’un contenu publié différent ne doit pas remplacer celui-ci sans comparaison manuelle. Préserver la sauvegarde pour extraire et réintégrer les éléments voulus. Dans le Studio, expliquer que la description accessible d’une image est lue notamment par les lecteurs d’écran et n’est pas une légende visible.
+
 Dans la galerie, permettre plus de trois petites images par ligne si l’espace le permet ; sur téléphone, conserver l’ordre et adapter automatiquement les dimensions. Les blocs distincts doivent rester sélectionnables et leur ordre, position et taille doivent avoir des réglages cohérents partout.
 
 May’in est la marque de Célia May ; l’ancien nom Célia Archi/Celiarchi ne doit plus structurer l’identité publique. Le site porte sur l’architecture d’intérieur, le design et la scénographie, avec un ton singulier, précis et sans texte générique, répétition ou slogan creux. Le logo, le favicon et les aperçus de partage doivent former une identité cohérente et porteuse de sens.

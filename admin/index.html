@@ -36,7 +36,7 @@
 
   <div class="studio" id="studio" hidden>
     <header class="studio-topbar">
-      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.9.0</span></small></div></div>
+      <div class="studio-brand"><span class="studio-brand__mark">M’</span><div><strong>May’in</strong><small>Studio · v<span id="studio-version">1.9.3</span></small></div></div>
       <div class="studio-mode" role="group" aria-label="Mode de la prévisualisation">
         <button class="segmented is-active" data-mode="edit" title="Cliquer sur un élément pour le modifier">✎ Modifier</button>
         <button class="segmented" data-mode="navigate" title="Utiliser les liens du site">↗ Naviguer</button>
@@ -85,7 +85,7 @@
       </div>
       <div id="publish-conflict" class="draft-warning" role="alert" hidden>
         <strong>Publication arrêtée pour protéger le site.</strong>
-        <span>Le contenu publié a changé depuis l’ouverture de ce brouillon, ou son origine est inconnue. Ton brouillon est conservé ici et rien n’a été remplacé. Télécharge une sauvegarde avant de comparer les deux versions.</span>
+        <span>Le brouillon est conservé. Vérifie sa version avant toute publication.</span>
         <div><button id="export-conflict" class="button" type="button">Télécharger mon brouillon</button></div>
       </div>
       <div class="workspace__canvas" id="canvas">
@@ -110,7 +110,7 @@
       <h2 id="draft-choice-title">Un brouillon est déjà sur cet appareil</h2>
       <p id="draft-choice-description"></p>
       <div class="draft-choice__actions">
-        <button id="resume-stored-draft" class="button button--primary" type="button">Reprendre ce brouillon</button>
+        <button id="resume-stored-draft" class="button button--primary" type="button">Reprendre ce brouillon compatible</button>
         <button id="download-stored-draft" class="button" type="button">Télécharger une sauvegarde de ce brouillon</button>
         <button id="start-from-published" class="button" type="button" disabled>Partir du site publié après sauvegarde</button>
       </div>
@@ -118,6 +118,6 @@
   </div>
   <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden />
   <input id="backup-input" type="file" accept="application/json,.json" hidden />
-  <script src="admin.js?v=30" type="module"></script>
+  <script src="admin.js?v=31" type="module"></script>
 </body>
 </html>

@@ -117,12 +117,24 @@ const server = http.createServer(async(req,res) => {
     assert.equal(publishedGallery.translated,false,'Gallery still uses pixel translations instead of its actual grid cells');
     assert.equal(publishedGallery.lastSpan,String(site.customBlocks.gallery.filter(block=>block.type==='image').at(-1).columnSpan),'Gallery ignores the last published image span');
     const spacerPreview=await page.evaluate(()=>{
-      const spacer=document.querySelector('[data-custom-blocks="gallery"] .custom-block--spacer');
+      const grid=document.querySelector('[data-custom-blocks="gallery"] .custom-blocks--gallery');
+      let spacer=grid.querySelector('.custom-block--spacer');
+      const injected=!spacer;
+      if (injected) {
+        spacer=document.createElement('div');
+        spacer.className='custom-block custom-block--spacer';
+        spacer.dataset.editPath='site.customBlocks.gallery.test-spacer';
+        spacer.dataset.spacerHeight='80';
+        spacer.style.setProperty('--space','80px');
+        grid.append(spacer);
+      }
       document.body.classList.add('admin-preview--edit');
       const label=getComputedStyle(spacer,'::before').content;
       const border=getComputedStyle(spacer).borderStyle;
       document.body.classList.remove('admin-preview--edit');
-      return {label,border,height:spacer.dataset.spacerHeight,publicLabel:getComputedStyle(spacer,'::before').content};
+      const result={label,border,height:spacer.dataset.spacerHeight,publicLabel:getComputedStyle(spacer,'::before').content};
+      if (injected) spacer.remove();
+      return result;
     });
     assert.ok(spacerPreview.label.includes('Espace')&&spacerPreview.label.includes(spacerPreview.height)&&spacerPreview.border==='dashed','Spacer is invisible or unidentifiable in Studio edit mode: '+JSON.stringify(spacerPreview));
     assert.equal(spacerPreview.publicLabel,'none','Spacer editor label leaked onto the public site');

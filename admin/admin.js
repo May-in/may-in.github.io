@@ -1,5 +1,5 @@
 import '../layout-model.js?v=6';
-const STUDIO_VERSION = '1.9.2';
+const STUDIO_VERSION = '1.9.3';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const dom = {
@@ -90,19 +90,7 @@ async function contentFingerprint(value, includeStudioVersion = false) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
-async function draftOrigin(saved, fallback = '') {
-  if (!saved) return publishedFingerprint;
-  const base = saved?._publishedFingerprint || fallback;
-  if (!base || base === publishedFingerprint) return base;
-  // Older Studio releases hashed the technical version together with content.
-  // Rebase only if every other published field still matches exactly.
-  for (const version of new Set([saved.site?.studioVersion, '1.7.0', '1.7.1', '1.8.0', '1.8.1'])) {
-    if (!version) continue;
-    const candidate = { site:{ ...publishedData.site, studioVersion:version }, projects:publishedData.projects };
-    if (await contentFingerprint(candidate, true) === base) return publishedFingerprint;
-  }
-  return base;
-}
+function draftOrigin(saved) { return saved?._publishedFingerprint || ''; }
 function setSaveState(message) { dom.saveState.textContent = message; }
 function authHeaders(extra = {}) { return sessionToken ? { ...extra, Authorization:`Bearer ${sessionToken}` } : extra; }
 function pushHistory() {
@@ -195,27 +183,38 @@ function exportBackup() {
   downloadBackup({ ...data, _publishedFingerprint:draftBaseFingerprint });
   backupRevision = draftRevision;
 }
+function showPublishConflict(reason) {
+  dom.conflictWarning.querySelector('strong').textContent = reason === 'system' ? 'Brouillon incompatible avec ce Studio.' : 'Publication arrêtée : le site publié a changé.';
+  dom.conflictWarning.querySelector('span').textContent = reason === 'system'
+    ? 'Ce brouillon vient d’une ancienne structure du Studio. Il est conservé, mais ne peut être ni repris ni publié automatiquement. Télécharge-le pour récupérer son contenu manuellement.'
+    : 'Le contenu publié est différent de celui sur lequel ce brouillon a été créé. Le publier pourrait rétablir d’anciens textes ou images. Rien n’a été remplacé ; télécharge-le pour comparer les versions.';
+  dom.conflictWarning.hidden = false;
+}
 async function offerStoredDraft(saved) {
   storedDraftCandidate = saved;
   storedDraftDownloaded = false;
   const origin = await draftOrigin(saved);
   const incompatibility = draftCompatibilityError(saved);
   const date = Number(saved._savedAt) ? new Date(saved._savedAt).toLocaleString('fr-BE') : '';
-  $('#draft-choice-description').textContent = `${date ? `Enregistré le ${date}. ` : ''}${origin === publishedFingerprint ? 'Il vient de la version publiée actuelle.' : 'Il vient d’une autre version publiée ou son origine est inconnue. La publication sera bloquée tant que ce conflit n’est pas résolu.'}${incompatibility ? ` ${incompatibility}` : ''} Le Studio ne le chargera pas sans ton choix.`;
+  $('#draft-choice-description').textContent = `${date ? `Enregistré le ${date}. ` : ''}${incompatibility || (origin === publishedFingerprint ? 'Ce brouillon est compatible avec la version publiée actuelle.' : 'Le site publié a changé depuis la création de ce brouillon, ou son origine est inconnue. Sa publication sera bloquée pour éviter de revenir en arrière.')} ${incompatibility ? 'Télécharge-le pour récupérer manuellement son contenu. Il ne sera pas ouvert dans ce Studio.' : 'Le Studio ne le reprendra pas sans ton choix.'}`;
+  $('#resume-stored-draft').disabled = !!incompatibility;
   $('#start-from-published').disabled = true;
   $('#draft-choice').hidden = false;
-  $('#resume-stored-draft').focus();
+  (incompatibility ? $('#download-stored-draft') : $('#resume-stored-draft')).focus();
 }
 async function resumeStoredDraft() {
   const saved = storedDraftCandidate;
   if (!saved) return;
+  const incompatibility = draftCompatibilityError(saved);
+  if (incompatibility) return showToast(incompatibility, true);
   try {
-    data = upgradeDraftShape(clone(saved), publishedData);
+    data = clone(saved);
     draftBaseFingerprint = await draftOrigin(saved);
     renderAllAdmin();
     $('#draft-choice').hidden = true;
     storedDraftCandidate = null;
-    dom.conflictWarning.hidden = draftBaseFingerprint === publishedFingerprint && !draftCompatibilityError(data);
+    dom.conflictWarning.hidden = draftBaseFingerprint === publishedFingerprint;
+    if (!dom.conflictWarning.hidden) showPublishConflict('content');
     setSaveState(dom.conflictWarning.hidden ? 'Brouillon repris · non publié' : 'Brouillon ancien · publication verrouillée');
   } catch (error) { data = clone(publishedData); draftBaseFingerprint = publishedFingerprint; showToast(`Impossible d’ouvrir ce brouillon : ${error.message}`, true); }
 }
@@ -254,12 +253,14 @@ function normalizeBackup(payload) {
   const site = payload.site;
   const projects = Array.isArray(payload.projects) ? payload.projects : payload.projects?.projects;
   if (!site || typeof site !== 'object' || Array.isArray(site) || !Array.isArray(projects)) throw new Error('La sauvegarde doit contenir le site et la liste des projets.');
-  return { site, projects, _publishedFingerprint:/^[a-f0-9]{64}$/.test(payload._publishedFingerprint || '') ? payload._publishedFingerprint : '' };
+  return { site, projects, _publishedFingerprint:/^[a-f0-9]{64}$/.test(payload._publishedFingerprint || '') ? payload._publishedFingerprint : '', _savedAt:payload._savedAt };
 }
 
 function draftCompatibilityError(value) {
   const site = value?.site;
-  if (!site || site.schemaVersion !== publishedData?.site?.schemaVersion) return 'Ce brouillon utilise une structure de site incompatible. Il est conservé, mais ne sera pas publié.';
+  // Increment site.schemaVersion whenever the Studio's editing/publishing contract changes.
+  // The visible Studio release number alone does not establish draft compatibility.
+  if (!site || site.schemaVersion !== publishedData?.site?.schemaVersion) return `Structure du brouillon incompatible (version ${site?.schemaVersion ?? 'inconnue'} ; Studio actuel : ${publishedData?.site?.schemaVersion ?? 'inconnue'}). Il est conservé, mais ne peut être repris ni publié automatiquement.`;
   if (!Array.isArray(value.projects) || !Array.isArray(site.gallery?.items) || !site.customBlocks ||
       Object.values(site.customBlocks).some(items => !Array.isArray(items))) return 'La structure du brouillon est incomplète. Il est conservé, mais ne sera pas publié.';
   const slugs = new Set();
@@ -273,39 +274,6 @@ function draftCompatibilityError(value) {
   return '';
 }
 
-function upgradeDraftShape(payload, reference = publishedData) {
-  if (!payload?.site || !Array.isArray(payload.projects)) return payload;
-  const site = payload.site;
-  const publicSite = reference?.site || {};
-  // A draft made before the domain migration keeps its content, but must not
-  // publish SEO links back to the former public address.
-  if (site.domain === 'https://may-in.github.io' && publicSite.domain === 'https://may-in.be') site.domain = publicSite.domain;
-  // Apply the specifically requested landscape correction to older local drafts too.
-  const [draftMajor = 0, draftMinor = 0] = String(site.studioVersion || '0.0').split('.').map(Number);
-  if (draftMajor < 1 || (draftMajor === 1 && draftMinor < 5)) {
-    const stand = payload.projects.find(project => project.slug === 'moooi-stand-commercial');
-    const image = stand?.media?.find(item => item.src === 'assets/projects/02-stand-moooi/12-maquette-dessus-alpha.webp');
-    if (image && ['original','portrait'].includes(image.format)) image.format = 'landscape';
-  }
-  site.customBlocks ||= {};
-  ['home','projects','gallery','about','contact','notFound','projectsHero','galleryHero','aboutHero','contactHero','notFoundHero'].forEach((key) => { site.customBlocks[key] ||= []; });
-  if (!Array.isArray(site.customBlocks.homeHero)) site.customBlocks.homeHero = clone(publicSite.customBlocks?.homeHero || []);
-  payload.projects.forEach((project) => { project.blocks ||= []; project.media ||= []; project.heroBlocks ||= []; });
-  const legacyText = {
-    aboutLead: 'May’in rassemble les projets d’architecture intérieure, de design et de scénographie de Célia May, basée dans la région de Mons et active à Thuin, Charleroi et dans le Hainaut.',
-    aboutContactEyebrow: 'Parlons de votre projet',
-    aboutContactLabel: 'Me contacter',
-    contactTitle: 'Parlons de votre projet.',
-    contactDetails: 'Utilisez le formulaire ci-dessous pour une première prise de contact.',
-    role: 'Architecture intérieure · Design · Scénographie',
-    seoTitle: 'May’in — Architecte d’intérieur à Mons | Célia May',
-    seoDescription: 'May’in est le portfolio de Célia May, architecte d’intérieur à Mons, active à Thuin, Charleroi et dans le Hainaut en architecture intérieure, design et scénographie.'
-  };
-  Object.entries(legacyText).forEach(([key, oldValue]) => { if (site[key] === oldValue && publicSite[key]) site[key] = publicSite[key]; });
-  if (publicSite.studioVersion) site.studioVersion = publicSite.studioVersion;
-  return MayinModel.ensureIds(payload);
-}
-
 async function importBackup(file) {
   try {
     const restored = normalizeBackup(JSON.parse(await file.text()));
@@ -313,12 +281,13 @@ async function importBackup(file) {
     if (incompatibility) throw new Error(incompatibility);
     if ((draftDirty || await readStoredDraft()) && !confirm('Remplacer le brouillon local actuel par cette sauvegarde ? Tu pourras encore annuler pendant cette session.')) return;
     pushHistory();
-    data = upgradeDraftShape({ site:clone(restored.site), projects:clone(restored.projects) });
+    data = clone(restored);
     draftBaseFingerprint = await draftOrigin(restored);
     selectedPath = '';
     selectedStyleId = '';
     inlineSessionPath = '';
     renderAllAdmin(); saveDraftSoon();
+    if (draftBaseFingerprint !== publishedFingerprint) showPublishConflict('content');
     if (await flushDraft()) {
       setSaveState('Sauvegarde restaurée · non publiée');
       showToast('Sauvegarde restaurée dans le brouillon. Vérifie-la avant de publier.');
@@ -523,10 +492,13 @@ function renderProjectText(index, key) {
   dom.inspectorTitle.textContent = key === 'title' ? 'Titre du projet' : 'Description du projet';
   dom.inspector.innerHTML = `<div class="form-section"><h3>Contenu</h3>${field(key === 'title' ? 'Titre' : 'Description', path, key === 'title' ? 'text' : 'textarea')}</div>${elementStyleControls(selectedStyleId)}<button class="button" data-select-path="projects.${index}">Voir toutes les propriétés du projet</button>`;
 }
+function accessibleDescriptionField(path) {
+  return `${field('Description pour lecteur d’écran', path, 'textarea', { rows: 3 })}<p class="form-note">Décris brièvement ce que l’image apporte. Ce texte aide notamment les personnes aveugles utilisant un lecteur d’écran ; il n’est pas affiché comme une légende sur le site. Laisse-le vide seulement si l’image est décorative.</p>`;
+}
 function renderMedia(projectIndex, mediaIndex) {
   const base = `projects.${projectIndex}.media.${mediaIndex}`; const item = getPath(base); if (!item) return renderProject(projectIndex);
   dom.inspectorTitle.textContent = selectedPath.endsWith('.caption') ? `Légende ${mediaIndex + 1}` : `Image ${mediaIndex + 1}`;
-  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${field('Description accessible', `${base}.alt`, 'textarea', { rows: 3 })}</div>${selectedPath.endsWith('.caption') && selectedStyleId ? `<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Ces réglages concernent uniquement la légende sélectionnée. Elle peut être déplacée, redimensionnée et stylisée comme un texte normal.</p></div>${elementStyleControls(selectedStyleId)}` : '<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Clique directement sur la légende dans l’aperçu pour afficher tous ses réglages de texte et de position.</p></div>'}
+  dom.inspector.innerHTML = `${imageControl(`${base}.src`)}<div class="form-section"><h3>Texte</h3>${field('Légende', `${base}.caption`, 'textarea', { rows: 3 })}${accessibleDescriptionField(`${base}.alt`)}</div>${selectedPath.endsWith('.caption') && selectedStyleId ? `<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Ces réglages concernent uniquement la légende sélectionnée. Elle peut être déplacée, redimensionnée et stylisée comme un texte normal.</p></div>${elementStyleControls(selectedStyleId)}` : '<div class="form-section"><h3>Style et position de la légende</h3><p class="form-note">Clique directement sur la légende dans l’aperçu pour afficher tous ses réglages de texte et de position.</p></div>'}
     ${choices('Taille', `${base}.kind`, [['wide','Large'],['process','Moyenne'],['detail','Petite'],['cutout','Détourée'],['plan','Plan']])}
     ${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}
     ${choices('Placement', `${base}.align`, [['left','Gauche'],['center','Centre'],['right','Droite']])}
@@ -536,14 +508,14 @@ function renderMedia(projectIndex, mediaIndex) {
 }
 function renderGalleryItem(index) {
   const base = `site.gallery.items.${index}`; dom.inspectorTitle.textContent = `Galerie · ${index + 1}`;
-  dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${field('Description accessible', `${base}.alt`, 'textarea')}</div>
+  dom.inspector.innerHTML = `${selectedPath.endsWith('.caption') ? elementStyleControls(selectedStyleId) : ''}${imageControl(`${base}.src`)}<div class="form-section"><h3>Informations</h3>${field('Catégorie', `${base}.category`)}${field('Légende', `${base}.caption`, 'textarea')}${field('Crédit / source', `${base}.credit`)}${accessibleDescriptionField(`${base}.alt`)}</div>
     ${choices('Taille', `${base}.size`, [['small','Petite'],['medium','Moyenne'],['large','Grande']])}${field('Cadre de l’image', `${base}.format`, 'select', { choices: [['original','Format d’origine'],['landscape','Paysage'],['portrait','Portrait'],['square','Carré']] })}${choices('Coins', `${base}.radius`, [['none','Carrés'],['soft','Doux'],['top-right','Angle'],['diagonal','Diagonal'],['all','Arrondis'],['pill','Pilule']])}
     <div class="form-section">${responsiveWidthField(`${base}.columnSpan`, true)}${field('Largeur dans sa colonne', `${base}.width`, 'range', { min:25,max:200,step:5,defaultValue:100 })}${field('Position', `${base}.objectPosition`, 'select', { choices: [['center','Centre'],['top','Haut'],['bottom','Bas'],['left','Gauche'],['right','Droite']] })}${layoutPositionFields(base)}<p class="form-note">Sur ordinateur, les petites images peuvent partager une ligne. Sur téléphone, elles s’empilent naturellement.</p><div class="field-row"><button class="button" data-move-path="${base}" data-delta="-1">↑ Avant</button><button class="button" data-move-path="${base}" data-delta="1">↓ Après</button></div><button class="danger-button" data-remove-path="${base}">Retirer de la galerie</button></div>${imageArrangementControls('site.gallery.items')}`;
 }
 function renderBlock(path) {
   const block = getPath(path); if (!block) return renderEmpty(); dom.inspectorTitle.textContent = 'Bloc de contenu';
   let fields = '';
-  if (block.type === 'image') fields = imageControl(`${path}.src`) + `<div class="form-section"><h3>Texte</h3>${field('Légende', `${path}.caption`, 'textarea')}${field('Description accessible', `${path}.alt`, 'textarea')}</div>` + styleBlockControls(path, block);
+  if (block.type === 'image') fields = imageControl(`${path}.src`) + `<div class="form-section"><h3>Texte</h3>${field('Légende', `${path}.caption`, 'textarea')}${accessibleDescriptionField(`${path}.alt`)}</div>` + styleBlockControls(path, block);
   else if (block.type === 'spacer') fields = field('Hauteur', `${path}.height`, 'range', { min:20,max:240,step:10,defaultValue:80,unit:'px' });
   else if (block.type !== 'divider') fields = `<div class="form-section"><h3>Contenu</h3>${field('Texte', `${path}.text`, 'textarea', { rows: 6 })}</div>` + styleBlockControls(path, block);
   if (path.startsWith('site.customBlocks.home.') && block.type !== 'divider') fields += field('Ordre sur téléphone', `${path}.flowPlacement`, 'select', { choices: [['before','Avant le texte de l’intention'],['after','Après le texte de l’intention']] });
@@ -576,7 +548,12 @@ function renderDashboard() {
   const incomplete = data.projects.filter((project) => !project.cover || !project.description || !(project.media || []).length).length;
   const stats = dashboard;
   const visitNote = stats?.sessionWindowHours ? `Même réseau : une fois / ${stats.sessionWindowHours} h` : 'Mise à jour du compteur à publier';
-  dom.inspector.innerHTML = `<div class="dashboard"><p class="dashboard__intro">Une vue simple de May’in : contenu, messages et fréquentation. Les chiffres sont anonymes et ne reposent sur aucun cookie.</p><div class="dashboard-grid">${statCard('Projets', data.projects.length, incomplete ? `${incomplete} à compléter` : 'Tous structurés')}${statCard('Images de projets', media, 'Hors couvertures')}${statCard('Brouillon', localStorage.getItem('mayin-studio-draft') ? 'À publier' : 'À jour', 'Conservé sur cet appareil')}</div><div class="form-section"><h3>Fréquentation · ${stats ? stats.month : 'chargement'}</h3>${stats ? `<div class="dashboard-grid">${statCard('Visites uniques', stats.human, visitNote)}${statCard('Robots détectés', stats.bots, stats.sessionWindowHours ? `Même robot : une fois / ${stats.sessionWindowHours} h` : 'Mise à jour du compteur à publier')}</div>${dashboardList('Pages consultées', stats.paths)}${dashboardList('Origine des visites', stats.referers)}${dashboardList('Pays', stats.countries)}${dashboardList('Villes approximatives', stats.cities)}${dashboardList('Appareils', stats.devices)}${dashboardList('Robots détectés', stats.botTypes)}` : '<p class="dashboard__muted">Les statistiques seront visibles ici dès les premières visites.</p>'}</div><div class="form-section"><h3>Messages reçus</h3><div id="message-list"><p class="dashboard__muted">Chargement…</p></div></div><div class="form-section"><h3>Référencement</h3><p class="dashboard__muted">La Search Console reste le bon endroit pour voir les requêtes Google, les impressions et les clics. Le Studio propose ici un accès simplifié, sans jargon.</p><a class="button" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fmay-in.be%2F" target="_blank" rel="noreferrer">Ouvrir Search Console ↗</a></div></div>`;
+  dom.inspector.innerHTML = `<div class="dashboard"><p class="dashboard__intro">Une vue simple de May’in : contenu, messages et fréquentation. Les chiffres sont anonymes et ne reposent sur aucun cookie.</p><div class="dashboard-grid">${statCard('Projets', data.projects.length, incomplete ? `${incomplete} à compléter` : 'Tous structurés')}${statCard('Images de projets', media, 'Hors couvertures')}${statCard('Brouillon', 'Vérification…', 'Conservé sur cet appareil')}</div><div class="form-section"><h3>Fréquentation · ${stats ? stats.month : 'chargement'}</h3>${stats ? `<div class="dashboard-grid">${statCard('Visites uniques', stats.human, visitNote)}${statCard('Robots détectés', stats.bots, stats.sessionWindowHours ? `Même robot : une fois / ${stats.sessionWindowHours} h` : 'Mise à jour du compteur à publier')}</div>${dashboardList('Pages consultées', stats.paths)}${dashboardList('Origine des visites', stats.referers)}${dashboardList('Pays', stats.countries)}${dashboardList('Villes approximatives', stats.cities)}${dashboardList('Appareils', stats.devices)}${dashboardList('Robots détectés', stats.botTypes)}` : '<p class="dashboard__muted">Les statistiques seront visibles ici dès les premières visites.</p>'}</div><div class="form-section"><h3>Messages reçus</h3><div id="message-list"><p class="dashboard__muted">Chargement…</p></div></div><div class="form-section"><h3>Référencement</h3><p class="dashboard__muted">La Search Console reste le bon endroit pour voir les requêtes Google, les impressions et les clics. Le Studio propose ici un accès simplifié, sans jargon.</p><a class="button" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fmay-in.be%2F" target="_blank" rel="noreferrer">Ouvrir Search Console ↗</a></div></div>`;
+  const draftValue = [...dom.inspector.querySelectorAll('.dashboard-card')].find(card => card.querySelector('span')?.textContent === 'Brouillon')?.querySelector('strong');
+  readStoredDraft().then(saved => {
+    if (!draftValue?.isConnected) return;
+    draftValue.textContent = !dom.draftWarning.hidden ? 'Non enregistré' : draftDirty ? 'Modifications en cours' : !saved ? 'À jour' : draftCompatibilityError(saved) ? 'Incompatible' : draftOrigin(saved) !== publishedFingerprint ? 'À vérifier' : 'À publier';
+  });
   loadMessages();
 }
 function dashboardList(title, entries = []) { if (!entries?.length) return ''; return `<div class="dashboard-list"><h4>${encode(title)}</h4>${entries.map((item) => `<div><span>${encode(item.label)}</span><strong>${item.value}</strong></div>`).join('')}</div>`; }
@@ -648,7 +625,7 @@ async function publish() {
   if (dom.publish.disabled) return;
   try {
     const incompatibility = draftCompatibilityError(data);
-    if (incompatibility) throw new Error(incompatibility);
+    if (incompatibility) { showPublishConflict('system'); throw new Error(incompatibility); }
     // Save the local recovery copy before starting a potentially slow request.
     if (!await flushDraft() && backupRevision !== draftRevision) {
       showToast('Publication arrêtée : télécharge d’abord une sauvegarde de ces modifications.', true);
@@ -660,9 +637,9 @@ async function publish() {
     if (!currentResponse.ok) throw new Error('Impossible de vérifier la version publiée. Le brouillon est conservé.');
     const currentFingerprint = await contentFingerprint(await currentResponse.json());
     if (!draftBaseFingerprint || draftBaseFingerprint !== publishedFingerprint || currentFingerprint !== publishedFingerprint) {
-      dom.conflictWarning.hidden = false;
+      showPublishConflict('content');
       setSaveState('Publication arrêtée · brouillon conservé');
-      showToast('Le site publié a changé ou ce brouillon est ancien. Rien n’a été remplacé.', true);
+      showToast('Le site publié a changé depuis ce brouillon. Rien n’a été remplacé.', true);
       return;
     }
     const payload = collectPublishData();

@@ -34,8 +34,8 @@
   "aboutContactLabel": "Prendre contact",
   "galleryEyebrow": "Regards",
   "galleryPageTitle": "Galerie",
-  "galleryTitle": "Visites, inspirations et visites personnelles",
-  "galleryText": "Lors de mes voyages et visites, j'ai pu être confrontée à diverses architectures, à de nouvelles sources d'inspiration mais également à la découverte de nouvelles choses. C'est donc ici que je choisi de les partager. ",
+  "galleryTitle": "Visites et inspirations personnelles",
+  "galleryText": "Lors de mes voyages et visites, j'ai pu être confrontée à diverses architectures, à de nouvelles sources d'inspiration mais également à la découverte de nouvelles choses. C'est donc ici que je choisis de les partager",
   "contactEyebrow": "Contact",
   "contactTitle": "Échangeons.",
   "email": "",
@@ -327,7 +327,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": "3"
+        "columnSpan": "3",
+        "id": "block-i37cm5"
       },
       {
         "type": "image",
@@ -336,7 +337,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": "3"
+        "columnSpan": "3",
+        "id": "block-cw63m4"
       },
       {
         "type": "image",
@@ -345,7 +347,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": "3"
+        "columnSpan": "3",
+        "id": "block-1fw0u1j"
       },
       {
         "type": "image",
@@ -354,7 +357,8 @@
         "caption": "",
         "radius": "soft",
         "width": 100,
-        "columnSpan": "3"
+        "columnSpan": "3",
+        "id": "block-1455t4e"
       }
     ],
     "about": [
@@ -987,10 +991,12 @@
       "offsetX": 260
     },
     "text-d6neu0": {
-      "width": 90,
+      "width": 75,
       "offsetY": -15,
       "offsetX": 170,
-      "positionY": 15
+      "positionY": 15,
+      "fontSize": 16,
+      "textAlign": "justify"
     },
     "text-x6r2jn": {
       "offsetX": 550,
